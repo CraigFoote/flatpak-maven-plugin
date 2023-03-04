@@ -60,6 +60,7 @@ The plugin takes as much information as it can from *other* standard POM element
  * `<licenses/>`. Required. Used for application meta-data.
  * `<scm/>`. Optional. Used for application meta-data.
  * `<issueManagement/>`. Optional. Used for application meta-data.
+ * `<developers/>`. Optional. Used for application meta-data.
  
 ### Add Resources
 
