@@ -107,7 +107,7 @@ A more complete example ..
 
 ```xml
 <configuration>
-	<mainClass>com.acme.Abc</mainClass> <!-- required --?
+	<mainClass>com.acme.Abc</mainClass> <!-- required -->
 	<modules>false</modules> <!-- disable JPMS -->
 	<manifest>
 		<appId>com.acme.Abc</appId>
@@ -154,7 +154,7 @@ And then test and run.
 
 ```
 flatpak-builder --user --install --force-clean build-dir com.acme.Abc.yml
-flatpak-builder run com.acme.Abc
+flatpak run com.acme.Abc
 ```
 
 Find out more in the [official documentation](https://docs.flatpak.org/en/latest/building.html).
@@ -177,7 +177,7 @@ You might want to `generate` the Flatpak data as part of the standard Maven `pac
 </executions>
 ```
 
-In which can you can just do `mvn clean package`. 
+In which case you can just do `mvn clean package`. 
 
 ## TODO
 
