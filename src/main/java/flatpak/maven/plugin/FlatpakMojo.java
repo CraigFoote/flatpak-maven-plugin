@@ -3,7 +3,6 @@ package flatpak.maven.plugin;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -12,7 +11,6 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.Writer;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
@@ -51,15 +49,20 @@ import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.core.exc.StreamWriteException;
-import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 @Mojo(threadSafe = true, name = "generate", defaultPhase = LifecyclePhase.PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, requiresProject = true)
 public class FlatpakMojo extends AbstractMojo {
+
+	private static Logger logger = LoggerFactory.getLogger(FlatpakMojo.class);
+	private static final String APP_SHARE = "/app/share";
+	private static final String OPENJDK = "openjdk";
+	private static final String SIMPLE = "simple";
 
 	@Parameter
 	private List<String> excludeArtifacts;
@@ -162,11 +165,13 @@ public class FlatpakMojo extends AbstractMojo {
 	 */
 	@Parameter
 	private List<String> systemModules;
+
 	/**
 	 * List of classpath jars (overrides automatic detection of type)
 	 */
 	@Parameter
 	private List<String> classpathArtifacts;
+
 	/**
 	 * List of automatic modules
 	 */
@@ -175,23 +180,23 @@ public class FlatpakMojo extends AbstractMojo {
 
 	@Parameter
 	private boolean mainArtificateIsModule;
-	
+
 	@Parameter(required = true)
 	private String categories;
-	
+
 	@Parameter(required = true)
 	private String runtime;
-	
+
 	@Parameter(required = true)
 	private String runtimeVersion;
-	
+
 	@Parameter(required = true)
 	private String sdk;
 
 	@Override
 	public void execute() throws MojoExecutionException {
 		if (skip) {
-			getLog().info("Skipping plugin execution");
+			logger.info("Skipping plugin execution");
 			return;
 		}
 
@@ -209,12 +214,12 @@ public class FlatpakMojo extends AbstractMojo {
 			manifest.getModules().add(appModule);
 		}
 		if (appModule.getBuildSystem() == null || appModule.getBuildSystem().equals("")) {
-			appModule.setBuildSystem("simple");
+			appModule.setBuildSystem(SIMPLE);
 		}
 		if (appModule.getName() == null || appModule.getName().equals("")) {
 			appModule.setName(manifest.getCommand());
 		}
-		if (!"simple".equals(appModule.getBuildSystem())) {
+		if (!SIMPLE.equals(appModule.getBuildSystem())) {
 			throw new UnsupportedOperationException("Build system is not 'simple'.");
 		}
 
@@ -225,12 +230,11 @@ public class FlatpakMojo extends AbstractMojo {
 		List<String> modulePaths = new ArrayList<>();
 
 		try {
-
 			addIcon(appModule);
 			addSplash(appModule);
 			addDesktopEntry(appModule);
 			addMetaInfo(appModule);
-			addFlatpakResource(appModule);
+			addFlatpakResource();
 
 			for (Artifact a : project.getArtifacts()) {
 				doArtifact(appModule, a, classPaths, modulePaths);
@@ -240,9 +244,9 @@ public class FlatpakMojo extends AbstractMojo {
 					mainArtificateIsModule |= doArtifact(appModule, a, classPaths, modulePaths);
 				}
 			}
-			if (includeProject)
+			if (includeProject) {
 				mainArtificateIsModule |= doArtifact(appModule, project.getArtifact(), classPaths, modulePaths);
-
+			}
 			addLauncher(appModule, classPaths, modulePaths, mainArtificateIsModule);
 
 			try (OutputStream out = new FileOutputStream(new File(appDirectory, manifest.getAppId() + ".yml"))) {
@@ -259,25 +263,24 @@ public class FlatpakMojo extends AbstractMojo {
 			try (Writer out = new FileWriter(metaInfoFile)) {
 				writeMetaInfo(metaInfo, out);
 			}
-		} catch (IOException | URISyntaxException | NoSuchAlgorithmException e) {
+		} catch (IOException | NoSuchAlgorithmException e) {
 			throw new MojoExecutionException("Failed to write manifiest.", e);
 		}
 	}
 
 	private void addLauncher(Module appModule, List<String> classPaths, List<String> modulePaths,
-			boolean mainArtificateIsModule)
-			throws StreamWriteException, DatabindException, IOException, FileNotFoundException {
-		appModule.getBuildCommands().add(formatInstall(appModule, manifest.getCommand(), "/app/bin"));
+			boolean mainArtificateIsModule) throws IOException {
+		appModule.getBuildCommands().add(formatInstall(manifest.getCommand(), "/app/bin"));
 		appModule.getSources().add(new Source(manifest.getCommand()));
 		try (OutputStream out = new FileOutputStream(new File(appDirectory, manifest.getCommand()))) {
-			writeLauncher(manifest, new OutputStreamWriter(out), classPaths, modulePaths, mainArtificateIsModule);
+			writeLauncher(new OutputStreamWriter(out), classPaths, modulePaths, mainArtificateIsModule);
 		}
 	}
 
 	private void addIcon(Module appModule) throws IOException {
 		if (iconFile == null) {
 			List<File> icons = getImageFiles(flatpakDataDirectory);
-			if (icons.size() > 0) {
+			if (!icons.isEmpty()) {
 				for (File f : icons) {
 					if (f.getName().startsWith(iconName + ".")) {
 						iconFile = f;
@@ -293,7 +296,7 @@ public class FlatpakMojo extends AbstractMojo {
 			String ext = getExtension(iconFile);
 			String appIconFile = manifest.getAppId() + "." + ext;
 			copy("Icon file", iconFile, new File(appDirectory, appIconFile), iconFile.lastModified());
-			appModule.getBuildCommands().add(formatInstall(appModule, appIconFile,
+			appModule.getBuildCommands().add(formatInstall(appIconFile,
 					"/app/share/icons/hicolor/" + getIconDirForTypeAndSize(iconFile) + "/apps"));
 			appModule.getSources().add(new Source(appIconFile));
 		}
@@ -318,7 +321,7 @@ public class FlatpakMojo extends AbstractMojo {
 			String ext = getExtension(iconFile);
 			String splashIconFile = manifest.getAppId() + "." + ext;
 			copy("Splashfile", splashFile, new File(appDirectory, splashIconFile), splashFile.lastModified());
-			appModule.getBuildCommands().add(formatInstall(appModule, splashIconFile,
+			appModule.getBuildCommands().add(formatInstall(splashIconFile,
 					"/app/share/pixmaps/" + manifest.getAppId() + ".splash." + getExtension(splashFile) + "/apps"));
 			appModule.getSources().add(new Source(splashIconFile));
 		}
@@ -338,6 +341,8 @@ public class FlatpakMojo extends AbstractMojo {
 				}
 			}
 		} catch (IOException e) {
+			String message = String.format("Unable to read icon file %s.", iconFile);
+			logger.error(message);
 		}
 		return "256x256";
 	}
@@ -345,7 +350,7 @@ public class FlatpakMojo extends AbstractMojo {
 	private void addExtensions() {
 		boolean hasJdkExtension = false;
 		for (String sdkExtension : manifest.getSdkExtensions()) {
-			if (sdkExtension.contains("openjdk")) {
+			if (sdkExtension.contains(OPENJDK)) {
 				hasJdkExtension = true;
 			}
 		}
@@ -358,23 +363,24 @@ public class FlatpakMojo extends AbstractMojo {
 		}
 	}
 
-	private void addFlatpakResource(Module appModule) throws FileNotFoundException, IOException {
-		for (File f : getImageFiles(appModule, "screenshots", screenshotsDirectory)) {
+	private void addFlatpakResource() throws IOException {
+		for (File f : getImageFiles("screenshots", screenshotsDirectory)) {
 			copy("Flatpak workOnFlatpakResources resource", f, new File(appDirectory, f.getName()), f.lastModified());
 		}
-		for (File f : getImageFiles(appModule, "thumbnails", screenshotsDirectory)) {
+		for (File f : getImageFiles("thumbnails", screenshotsDirectory)) {
 			copy("Flatpak workOnFlatpakResources resource", f, new File(appDirectory, f.getName()), f.lastModified());
 		}
 	}
 
-	private List<File> getImageFiles(Module appModule, String type, File root) throws IOException {
+	private List<File> getImageFiles(String type, File root) {
 		File dir = resolveFlatpakDataDir(type, root);
 		return getImageFiles(dir);
 	}
 
 	private List<File> getImageFiles(File dir) {
-		if (!dir.exists())
-			return new ArrayList<File>();
+		if (!dir.exists()) {
+			return new ArrayList<>();
+		}
 		return Arrays.asList(dir.listFiles((d, n) -> {
 			for (String ext : imageTypes) {
 				if (n.toLowerCase().endsWith("." + ext)) {
@@ -385,11 +391,11 @@ public class FlatpakMojo extends AbstractMojo {
 		}));
 	}
 
-	private void addMetaInfo(Module appModule) throws FileNotFoundException, IOException {
+	private void addMetaInfo(Module appModule) {
 		if (metaInfo == null) {
 			metaInfo = new MetaInfo();
 		}
-		if (metaInfo.getType() == null || desktopEntry.getType().equals("")) {
+		if (metaInfo.getType() == null || desktopEntry.getType().isEmpty()) {
 			if (desktopEntry == null || desktopEntry.isIgnore()) {
 				metaInfo.setType("console-application");
 			} else {
@@ -399,35 +405,35 @@ public class FlatpakMojo extends AbstractMojo {
 		if (metaInfo.getId() == null || metaInfo.getId().equals("")) {
 			metaInfo.setId(manifest.getAppId());
 		}
-		if ((metaInfo.getName() == null || metaInfo.getName().equals("")) && project.getName() != null
-				&& !project.getName().equals("")) {
+		if ((metaInfo.getName() == null || metaInfo.getName().isEmpty()) && project.getName() != null
+				&& !project.getName().isEmpty()) {
 			metaInfo.setName(project.getName());
 		}
-		if ((metaInfo.getSummary() == null || metaInfo.getSummary().equals("")) && project.getDescription() != null
-				&& !project.getDescription().equals("")) {
+		if ((metaInfo.getSummary() == null || metaInfo.getSummary().isEmpty()) && project.getDescription() != null
+				&& !project.getDescription().isEmpty()) {
 			metaInfo.setSummary(firstSentence(project.getDescription()));
 		}
-		if ((metaInfo.getDescription() == null || metaInfo.getDescription().equals(""))
-				&& project.getDescription() != null && !project.getDescription().equals("")) {
+		if ((metaInfo.getDescription() == null || metaInfo.getDescription().isEmpty())
+				&& project.getDescription() != null && !project.getDescription().isEmpty()) {
 			metaInfo.setDescription("<p>" + project.getDescription() + "</p>");
 		}
-		if ((metaInfo.getProjectLicense() == null || metaInfo.getProjectLicense().equals(""))
+		if ((metaInfo.getProjectLicense() == null || metaInfo.getProjectLicense().isEmpty())
 				&& !project.getLicenses().isEmpty()) {
 			metaInfo.setProjectLicense(project.getLicenses().get(0).getName());
 		}
-		if ((metaInfo.getMetaDataLicense() == null || metaInfo.getMetaDataLicense().equals(""))
-				&& metaInfo.getProjectLicense() != null && !metaInfo.getProjectLicense().equals("")) {
+		if ((metaInfo.getMetaDataLicense() == null || metaInfo.getMetaDataLicense().isEmpty())
+				&& metaInfo.getProjectLicense() != null && !metaInfo.getProjectLicense().isEmpty()) {
 			metaInfo.setMetaDataLicense(metaInfo.getProjectLicense());
 		}
 		if (!metaInfo.getUrl().containsKey("homePage") && project.getUrl() != null) {
 			metaInfo.getUrl().put("homepage", project.getUrl());
 		}
 		if (!metaInfo.getUrl().containsKey("vcs-browserPage") && project.getScm() != null
-				&& project.getScm().getUrl() != null && !project.getScm().getUrl().equals("")) {
+				&& project.getScm().getUrl() != null && !project.getScm().getUrl().isEmpty()) {
 			metaInfo.getUrl().put("vcs-browser", project.getScm().getUrl());
 		}
 		if (!metaInfo.getUrl().containsKey("vcs-browserPage") && project.getIssueManagement() != null
-				&& project.getIssueManagement().getUrl() != null && !project.getIssueManagement().getUrl().equals("")) {
+				&& project.getIssueManagement().getUrl() != null && !project.getIssueManagement().getUrl().isEmpty()) {
 			metaInfo.getUrl().put("bugtracker", project.getIssueManagement().getUrl());
 		}
 		if (!metaInfo.getUrl().containsKey("contact") && !project.getDevelopers().isEmpty()
@@ -435,20 +441,20 @@ public class FlatpakMojo extends AbstractMojo {
 				&& !project.getDevelopers().get(0).getUrl().equals("")) {
 			metaInfo.getUrl().put("contact", project.getDevelopers().get(0).getUrl());
 		}
-		if ((metaInfo.getProjectGroup() == null || metaInfo.getProjectGroup().equals(""))
+		if ((metaInfo.getProjectGroup() == null || metaInfo.getProjectGroup().isEmpty())
 				&& project.getOrganization() != null && project.getOrganization().getName() != null
-				&& !project.getOrganization().getName().equals("")) {
+				&& !project.getOrganization().getName().isEmpty()) {
 			metaInfo.setProjectGroup(project.getOrganization().getName());
 		}
 
-		if ((metaInfo.getDeveloperName() == null || metaInfo.getDeveloperName().equals(""))
+		if ((metaInfo.getDeveloperName() == null || metaInfo.getDeveloperName().isEmpty())
 				&& !project.getDevelopers().isEmpty()) {
 			metaInfo.setDeveloperName(project.getDevelopers().get(0).getName());
 		}
 
 		File metaInfoFile = getMetaInfoFile();
 
-		appModule.getBuildCommands().add(formatInstall(appModule, metaInfoFile.getName(), "/app/share/appdata"));
+		appModule.getBuildCommands().add(formatInstall(metaInfoFile.getName(), "/app/share/appdata"));
 		appModule.getSources().add(new Source(metaInfoFile.getName()));
 	}
 
@@ -467,7 +473,7 @@ public class FlatpakMojo extends AbstractMojo {
 		return new File(appDirectory, manifest.getAppId() + ".metainfo.xml");
 	}
 
-	private void addDesktopEntry(Module appModule) throws FileNotFoundException, IOException {
+	private void addDesktopEntry(Module appModule) {
 		if (desktopEntry == null) {
 			desktopEntry = new DesktopEntry();
 		}
@@ -492,8 +498,7 @@ public class FlatpakMojo extends AbstractMojo {
 			}
 			File desktopFile = getDesktopEntryFile();
 
-			appModule.getBuildCommands()
-					.add(formatInstall(appModule, desktopFile.getName(), "/app/share/applications"));
+			appModule.getBuildCommands().add(formatInstall(desktopFile.getName(), "/app/share/applications"));
 			appModule.getSources().add(new Source(desktopFile.getName()));
 		}
 	}
@@ -528,18 +533,18 @@ public class FlatpakMojo extends AbstractMojo {
 	}
 
 	private void addSdkExtensionModule() {
-		Module sdkExtensionModule = manifest.getModule("openjdk");
+		Module sdkExtensionModule = manifest.getModule(OPENJDK);
 		if (sdkExtensionModule == null) {
-			String jdkName = "openjdk";
+			String jdkName = OPENJDK;
 			for (String ext : manifest.getSdkExtensions()) {
-				if (ext.contains("openjdk")) {
+				if (ext.contains(OPENJDK)) {
 					int idx = ext.lastIndexOf('.');
 					jdkName = idx == -1 ? ext : ext.substring(idx + 1);
 				}
 			}
 			sdkExtensionModule = new Module();
-			sdkExtensionModule.setBuildSystem("simple");
-			sdkExtensionModule.setName("openjdk");
+			sdkExtensionModule.setBuildSystem(SIMPLE);
+			sdkExtensionModule.setName(OPENJDK);
 			sdkExtensionModule.getBuildCommands().add("/usr/lib/sdk/" + jdkName + "/install.sh");
 			manifest.getModules().add(0, sdkExtensionModule);
 		}
@@ -566,8 +571,8 @@ public class FlatpakMojo extends AbstractMojo {
 		}
 	}
 
-	private void writeLauncher(Manifest manifest, Writer writer, List<String> classPaths, List<String> modulePaths,
-			boolean mainArtificateIsModule) throws StreamWriteException, DatabindException, IOException {
+	private void writeLauncher(Writer writer, List<String> classPaths, List<String> modulePaths,
+			boolean mainArtificateIsModule) {
 		try (PrintWriter pw = new PrintWriter(writer, true)) {
 			pw.println("#!/bin/bash");
 			if (launcherPreCommands != null) {
@@ -609,7 +614,7 @@ public class FlatpakMojo extends AbstractMojo {
 					classPaths.stream().map(s -> "/app/share/" + s).collect(Collectors.toList())));
 		}
 
-		if (systemModules != null && systemModules.size() > 0) {
+		if (systemModules != null && !systemModules.isEmpty()) {
 			vmopts.add("--add-modules");
 			vmopts.add(String.join(",", systemModules));
 		}
@@ -620,14 +625,12 @@ public class FlatpakMojo extends AbstractMojo {
 		}
 	}
 
-	private void writeManifest(Manifest manifest, Writer writer)
-			throws StreamWriteException, DatabindException, IOException {
+	private void writeManifest(Manifest manifest, Writer writer) throws IOException {
 		ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
 		mapper.writeValue(writer, manifest);
 	}
 
-	private void writeMetaInfo(MetaInfo metaInfo, Writer writer)
-			throws StreamWriteException, DatabindException, IOException {
+	private void writeMetaInfo(MetaInfo metaInfo, Writer writer) throws IOException {
 		XmlMapper mapper = new XmlMapper();
 		new PrintWriter(writer, true).println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
 		mapper.writeValue(writer, metaInfo);
@@ -657,32 +660,46 @@ public class FlatpakMojo extends AbstractMojo {
 	}
 
 	private boolean doArtifact(Module appModule, Artifact a, List<String> classPaths, List<String> modulePaths)
-			throws MojoExecutionException, IOException, URISyntaxException, NoSuchAlgorithmException {
-
-		getLog().debug(String.format("Processing %s", a.getFile().getName()));
+			throws MojoExecutionException, IOException, NoSuchAlgorithmException {
+		String message = String.format("Processing %s", a.getFile().getName());
+		logger.debug(message);
 
 		String artifactId = a.getArtifactId();
 		org.eclipse.aether.artifact.Artifact aetherArtifact = new DefaultArtifact(a.getGroupId(), a.getArtifactId(),
 				a.getClassifier(), a.getType(), a.getVersion());
 
-		ArtifactResult resolutionResult = resolveRemoteArtifact(new HashSet<MavenProject>(), project, aetherArtifact,
+		ArtifactResult resolutionResult = resolveRemoteArtifact(new HashSet<>(), project, aetherArtifact,
 				this.repositories);
-		if (resolutionResult == null)
+		if (resolutionResult == null) {
 			throw new MojoExecutionException("Artifact " + aetherArtifact.getGroupId() + ":"
 					+ aetherArtifact.getArtifactId() + " could not be resolved.");
-
+		}
 		aetherArtifact = resolutionResult.getArtifact();
 
 		if (containsArtifact(excludeArtifacts, aetherArtifact)) {
-
-			getLog().info("Artifact " + artifactId + " is explicitly excluded.");
+			message = String.format("Artifact %s is explicitly excluded.", artifactId);
+			logger.info(message);
 			return false;
 		}
 
+		/*
+		 * The following non-deprecated #getPath() call causes an error when run on
+		 * JRE22.
+		 * 
+		 * Path path = aetherArtifact.getPath();
+		 * 
+		 * "...generate failed: An API incompatibility was encountered while executing
+		 * ca.footeware:flatpak-maven-plugin:1.0.0-SNAPSHOT:generate:
+		 * java.lang.NoSuchMethodError: 'java.nio.file.Path
+		 * org.eclipse.aether.artifact.Artifact.getPath()'"
+		 */
+		// FIXME
 		File file = aetherArtifact.getFile();
 		if (file == null || !file.exists()) {
-			getLog().warn("Artifact " + artifactId
-					+ " has no attached file. Its content will not be copied in the target model directory.");
+			message = String.format(
+					"Artifact %s has no attached file. Its content will not be copied in the target model directory.",
+					artifactId);
+			logger.warn(message);
 			return false;
 		}
 
@@ -697,9 +714,10 @@ public class FlatpakMojo extends AbstractMojo {
 	}
 
 	private void install(Module appModule, Artifact a, ArtifactResult resolutionResult, File file)
-			throws IOException, URISyntaxException, NoSuchAlgorithmException {
+			throws IOException, NoSuchAlgorithmException {
 		String entryPath = getFileName(a);
-		getLog().info(String.format("Adding %s", a.getFile().getName()));
+		String message = String.format("Adding %s", a.getFile().getName());
+		logger.info(message);
 		String remoteUrl = validateUrl(mavenUrl(resolutionResult));
 		Source entry = new Source();
 		if (remotesFromOriginalSource) {
@@ -707,28 +725,27 @@ public class FlatpakMojo extends AbstractMojo {
 				entry.setType("file");
 				entry.setUrl(remoteUrl);
 				entry.setSha256(getFileChecksum(MessageDigest.getInstance("SHA-256"), a.getFile()));
-				appModule.getBuildCommands()
-						.add(formatInstall(appModule, getBasePath(remoteUrl), entryPath, "/app/share"));
+				appModule.getBuildCommands().add(formatInstall(getBasePath(remoteUrl), entryPath, APP_SHARE));
 			} else {
 				copy("Jar from Maven", file, new File(appDirectory, entryPath), file.lastModified());
 				entry.setType("file");
 				entry.setPath(entryPath);
-				appModule.getBuildCommands().add(formatInstall(appModule, entryPath, "/app/share"));
+				appModule.getBuildCommands().add(formatInstall(entryPath, APP_SHARE));
 			}
 		} else {
 			entry.setType("file");
 			entry.setPath(entryPath);
 			copy("Jar from Local", a.getFile(), new File(appDirectory, entryPath), file.lastModified());
-			appModule.getBuildCommands().add(formatInstall(appModule, entryPath, "/app/share"));
+			appModule.getBuildCommands().add(formatInstall(entryPath, APP_SHARE));
 		}
 		appModule.getSources().add(entry);
 	}
 
-	private String formatInstall(Module module, String entryPath, String dir) {
-		return formatInstall(module, entryPath, entryPath, dir);
+	private String formatInstall(String entryPath, String dir) {
+		return formatInstall(entryPath, entryPath, dir);
 	}
 
-	private String formatInstall(Module module, String sourcePath, String entryPath, String dir) {
+	private String formatInstall(String sourcePath, String entryPath, String dir) {
 		return String.format("install -D %s %s/%s", sourcePath, dir, entryPath);
 	}
 
@@ -745,7 +762,7 @@ public class FlatpakMojo extends AbstractMojo {
 		builder.append(baseVersion + "/");
 		builder.append(artifactId + "-" + version);
 
-		if (classifier != null && classifier.length() > 0) {
+		if (classifier != null && !classifier.isEmpty()) {
 			builder.append('-' + classifier);
 		}
 
@@ -764,8 +781,7 @@ public class FlatpakMojo extends AbstractMojo {
 				conx.getInputStream().close();
 				return url;
 			} catch (Exception e) {
-				getLog().warn(
-						MessageFormat.format("{0} will use local copy as remote failed verification check.", url));
+				logger.warn(MessageFormat.format("{0} will use local copy as remote failed verification check.", url));
 				return null;
 			}
 		}
@@ -777,14 +793,14 @@ public class FlatpakMojo extends AbstractMojo {
 		}
 
 		org.eclipse.aether.repository.ArtifactRepository repo = result.getRepository();
-		MavenProject project = this.project;
-		if (project != null) {
-			String url = mavenUrlForProject(result, repo, project);
+		MavenProject mProject = this.project;
+		if (mProject != null) {
+			String url = mavenUrlForProject(result, repo, mProject);
 			if (url != null)
 				return url;
 		}
-		while (project != null) {
-			List<MavenProject> collectedProjects = project.getCollectedProjects();
+		while (mProject != null) {
+			List<MavenProject> collectedProjects = mProject.getCollectedProjects();
 			if (collectedProjects != null) {
 				for (MavenProject p : collectedProjects) {
 					String url = mavenUrlForProject(result, repo, p);
@@ -792,7 +808,7 @@ public class FlatpakMojo extends AbstractMojo {
 						return url;
 				}
 			}
-			project = project.getParent();
+			mProject = mProject.getParent();
 		}
 		return null;
 	}
@@ -821,7 +837,7 @@ public class FlatpakMojo extends AbstractMojo {
 			fn.append("-");
 			fn.append(version);
 		}
-		if (classifier != null && classifier.length() > 0) {
+		if (classifier != null && !classifier.isEmpty()) {
 			fn.append("-");
 			fn.append(classifier);
 		}
@@ -831,41 +847,56 @@ public class FlatpakMojo extends AbstractMojo {
 	}
 
 	private boolean containsArtifact(Collection<String> artifactNames, org.eclipse.aether.artifact.Artifact artifact) {
-		if (artifactNames == null)
+		if (artifactNames == null) {
 			return false;
+		}
 		String k = artifact.getGroupId() + ":" + artifact.getArtifactId() + ":" + artifact.getClassifier();
-		if (artifactNames.contains(k))
+		if (artifactNames.contains(k)) {
 			return true;
+		}
 		k = artifact.getGroupId() + ":" + artifact.getArtifactId();
-		if (artifactNames.contains(k))
+		if (artifactNames.contains(k)) {
 			return true;
+		}
 		k = artifact.getArtifactId();
-		if (artifactNames.contains(k))
+		if (artifactNames.contains(k)) {
 			return true;
+		}
 		k = artifact.getGroupId();
-		if (artifactNames.contains(k))
-			return true;
-		return false;
+		return artifactNames.contains(k);
 	}
 
 	private boolean isModule(org.eclipse.aether.artifact.Artifact a) throws IOException {
-		if (!modules)
+		if (!modules) {
 			return false;
-
-		if (automaticArtifacts != null && containsArtifact(new LinkedHashSet<>(automaticArtifacts), a))
+		}
+		if (automaticArtifacts != null && containsArtifact(new LinkedHashSet<>(automaticArtifacts), a)) {
 			return true;
-
-		if (classpathArtifacts != null && containsArtifact(new LinkedHashSet<>(classpathArtifacts), a))
+		}
+		if (classpathArtifacts != null && containsArtifact(new LinkedHashSet<>(classpathArtifacts), a)) {
 			return false;
-
+		}
 		/* Detect */
 		return isModuleJar(a);
 	}
 
 	private boolean isModuleJar(org.eclipse.aether.artifact.Artifact a) throws IOException {
+		/*
+		 * The following non-deprecated #getPath() call causes an error when run on
+		 * JRE22.
+		 * 
+		 * Path path = a.getPath();
+		 * 
+		 * "...generate failed: An API incompatibility was encountered while executing
+		 * ca.footeware:flatpak-maven-plugin:1.0.0-SNAPSHOT:generate:
+		 * java.lang.NoSuchMethodError: 'java.nio.file.Path
+		 * org.eclipse.aether.artifact.Artifact.getPath()'"
+		 */
+		// FIXME
 		File file = a.getFile();
 		if (file == null) {
-			getLog().warn(String.format("%s has a null file?", a));
+			String message = String.format("%s has a null file?", a);
+			logger.warn(message);
 		} else {
 			if ("jar".equals(a.getExtension())) {
 				return isModuleJar(file);
@@ -878,9 +909,8 @@ public class FlatpakMojo extends AbstractMojo {
 		try (JarFile jarFile = new JarFile(file)) {
 			Enumeration<JarEntry> enumOfJar = jarFile.entries();
 			java.util.jar.Manifest mf = jarFile.getManifest();
-			if (mf != null) {
-				if (mf.getMainAttributes().getValue("Automatic-Module-Name") != null)
-					return true;
+			if (mf != null && mf.getMainAttributes().getValue("Automatic-Module-Name") != null) {
+				return true;
 			}
 			while (enumOfJar.hasMoreElements()) {
 				JarEntry entry = enumOfJar.nextElement();
@@ -901,7 +931,6 @@ public class FlatpakMojo extends AbstractMojo {
 		visitedProjects.add(project);
 		try {
 			resolutionResult = this.repoSystem.resolveArtifact(this.repoSession, req);
-
 		} catch (ArtifactResolutionException e) {
 			if (project.getParent() == null) {
 				/* Reached the root (reactor), now look in child module repositories too */
@@ -913,12 +942,14 @@ public class FlatpakMojo extends AbstractMojo {
 							if (resolutionResult != null)
 								break;
 						} catch (MojoExecutionException mee) {
+							logger.error("An error occurred resolving remote artifacts.", mee);
 						}
 					}
 				}
-			} else if (!visitedProjects.contains(project.getParent()))
+			} else if (!visitedProjects.contains(project.getParent())) {
 				return resolveRemoteArtifact(visitedProjects, project.getParent(), aetherArtifact,
 						project.getParent().getRemoteProjectRepositories());
+			}
 		}
 		return resolutionResult;
 	}
@@ -928,12 +959,16 @@ public class FlatpakMojo extends AbstractMojo {
 	}
 
 	private void copy(String reason, File p1, File p2, long mod) throws IOException {
-		getLog().debug(String.format("Copy %s - %s to %s", reason, p1.getAbsolutePath(), p2.getAbsolutePath()));
+		String message = String.format("Copy %s - %s to %s", reason, p1.getAbsolutePath(), p2.getAbsolutePath());
+		logger.debug(message);
 		p2.getParentFile().mkdirs();
 		try (OutputStream out = new FileOutputStream(p2)) {
 			Files.copy(p1.toPath(), out);
 		}
-		p2.setLastModified(mod);
+		boolean setLastModified = p2.setLastModified(mod);
+		if (!setLastModified) {
+			throw new IOException("Unable to set 'lastModified' on file " + p2);
+		}
 	}
 
 	private static String getFileChecksum(MessageDigest digest, File file) throws IOException {
@@ -943,7 +978,6 @@ public class FlatpakMojo extends AbstractMojo {
 			while ((bytesCount = fis.read(byteArray)) != -1) {
 				digest.update(byteArray, 0, bytesCount);
 			}
-			;
 		}
 		byte[] bytes = digest.digest();
 		StringBuilder sb = new StringBuilder();

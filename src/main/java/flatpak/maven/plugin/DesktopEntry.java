@@ -4,6 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class DesktopEntry {
+	
 	private String type;
 	private String name;
 	private Map<String, String> names = new LinkedHashMap<>();
