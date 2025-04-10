@@ -1,4 +1,15 @@
-# maven-flatpak-plugin
+# flatpak-maven-plugin
+
+A fork of [maven-flatpak-plugin](https://github.com/bithatch/maven-flatpak-plugin) by Brett Smith.
+
+I've updated the `pom.xml` dependencies.  
+I've added configuration tags for `category`, `runtime`, `runtimeVersion` and `sdk`.  
+I've also renamed it *flatpak-maven-plugin* in accordance with [maven guidelines](https://maven.apache.org/guides/plugin/guide-java-plugin-development.html#Important_Notice).  
+I'm hoping to enable gsettings schema use.
+
+Original README follows:
+
+---
 
 Generate a Flatpak manifest and other required files from a Maven POM to create a distributable application. It will turn your Java application into a Flatpak package, which can easily be installed and launched by Linux users of any distribution that supports Flatpak.
 

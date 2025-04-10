@@ -1,4 +1,4 @@
-package uk.co.bithatch.maven.flatpak.plugin;
+package flatpak.maven.plugin;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -13,6 +13,7 @@ public class DesktopEntry {
 	private String comment;
 	private Map<String, String> comments = new LinkedHashMap<>();
 	private boolean ignore;
+	private String categories;
 
 	public final boolean isIgnore() {
 		return ignore;
@@ -74,4 +75,11 @@ public class DesktopEntry {
 		return comments;
 	}
 
+	public String getCategories() {
+		return categories;
+	}
+
+	public void setCategories(String categories) {
+		this.categories = categories;
+	}
 }

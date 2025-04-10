@@ -1,4 +1,4 @@
-package uk.co.bithatch.maven.flatpak.plugin;
+package flatpak.maven.plugin;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -11,6 +11,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.Writer;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
@@ -57,8 +58,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
-import edu.emory.mathcs.backport.java.util.Collections;
-
 @Mojo(threadSafe = true, name = "generate", defaultPhase = LifecyclePhase.PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, requiresProject = true)
 public class FlatpakMojo extends AbstractMojo {
 
@@ -92,7 +91,7 @@ public class FlatpakMojo extends AbstractMojo {
 	@Parameter(defaultValue = "icon")
 	private String iconName;
 
-	@Parameter(defaultValue = "spash")
+	@Parameter(defaultValue = "splash")
 	private String splashName;
 
 	@Parameter
@@ -111,7 +110,7 @@ public class FlatpakMojo extends AbstractMojo {
 	private String mainClass;
 
 	@Parameter
-	private String[] imageTypes = new String[] { "svg", "png", "svg", "gif", "jpg", "jpeg" };
+	private String[] imageTypes = new String[] { "svg", "png", "gif", "jpg", "jpeg" };
 
 	@Parameter(defaultValue = "${maven.compiler.source}")
 	private int javaSdkExtensionVersion;
@@ -176,6 +175,18 @@ public class FlatpakMojo extends AbstractMojo {
 
 	@Parameter
 	private boolean mainArtificateIsModule;
+	
+	@Parameter(required = true)
+	private String categories;
+	
+	@Parameter(required = true)
+	private String runtime;
+	
+	@Parameter(required = true)
+	private String runtimeVersion;
+	
+	@Parameter(required = true)
+	private String sdk;
 
 	@Override
 	public void execute() throws MojoExecutionException {
@@ -291,7 +302,7 @@ public class FlatpakMojo extends AbstractMojo {
 	private void addSplash(Module appModule) throws IOException {
 		if (splashFile == null) {
 			List<File> icons = getImageFiles(flatpakDataDirectory);
-			if (icons.size() > 0) {
+			if (!icons.isEmpty()) {
 				for (File f : icons) {
 					if (f.getName().startsWith(splashName + ".")) {
 						splashFile = f;
@@ -363,7 +374,7 @@ public class FlatpakMojo extends AbstractMojo {
 
 	private List<File> getImageFiles(File dir) {
 		if (!dir.exists())
-			return Collections.emptyList();
+			return new ArrayList<File>();
 		return Arrays.asList(dir.listFiles((d, n) -> {
 			for (String ext : imageTypes) {
 				if (n.toLowerCase().endsWith("." + ext)) {
@@ -476,6 +487,9 @@ public class FlatpakMojo extends AbstractMojo {
 			if ((desktopEntry.getIcon() == null || desktopEntry.getIcon().equals("")) && iconFile != null) {
 				desktopEntry.setIcon(manifest.getAppId());
 			}
+			if (desktopEntry.getCategories() == null || desktopEntry.getCategories().isEmpty()) {
+				desktopEntry.setCategories(categories);
+			}
 			File desktopFile = getDesktopEntryFile();
 
 			appModule.getBuildCommands()
@@ -509,6 +523,7 @@ public class FlatpakMojo extends AbstractMojo {
 			for (Map.Entry<String, String> en : desktopEntry.getComments().entrySet()) {
 				writer.println(String.format("Comment[%s]=%s", en.getKey(), en.getValue()));
 			}
+			writer.println(String.format("Categories=%s", desktopEntry.getCategories()));
 		}
 	}
 
@@ -535,17 +550,9 @@ public class FlatpakMojo extends AbstractMojo {
 			manifest.setAppId(normalisePackage(project.getGroupId()) + "." + normalizeName(project.getArtifactId()));
 		}
 
-		if (manifest.getRuntime() == null || manifest.getRuntime().equals("")) {
-			manifest.setRuntime("org.freedesktop.Platform");
-		}
-
-		if (manifest.getRuntimeVersion() == null || manifest.getRuntimeVersion().equals("")) {
-			manifest.setRuntimeVersion("22.08");
-		}
-
-		if (manifest.getSdk() == null || manifest.getSdk().equals("")) {
-			manifest.setSdk("org.freedesktop.Sdk");
-		}
+		manifest.setRuntime(runtime);
+		manifest.setRuntimeVersion(runtimeVersion);
+		manifest.setSdk(sdk);
 
 		if (manifest.getCommand() == null || manifest.getCommand().equals("")) {
 			manifest.setCommand(project.getArtifactId());
@@ -563,8 +570,8 @@ public class FlatpakMojo extends AbstractMojo {
 			boolean mainArtificateIsModule) throws StreamWriteException, DatabindException, IOException {
 		try (PrintWriter pw = new PrintWriter(writer, true)) {
 			pw.println("#!/bin/bash");
-			if(launcherPreCommands != null) {
-				for(String s : launcherPreCommands) {
+			if (launcherPreCommands != null) {
+				for (String s : launcherPreCommands) {
 					pw.println(s);
 				}
 			}
@@ -578,8 +585,8 @@ public class FlatpakMojo extends AbstractMojo {
 			}
 			execLine.append(mainClass);
 			pw.println(execLine.toString());
-			if(launcherPostCommands != null) {
-				for(String s : launcherPostCommands) {
+			if (launcherPostCommands != null) {
+				for (String s : launcherPostCommands) {
 					pw.println(s);
 				}
 			}
@@ -700,7 +707,8 @@ public class FlatpakMojo extends AbstractMojo {
 				entry.setType("file");
 				entry.setUrl(remoteUrl);
 				entry.setSha256(getFileChecksum(MessageDigest.getInstance("SHA-256"), a.getFile()));
-				appModule.getBuildCommands().add(formatInstall(appModule, getBasePath(remoteUrl),  entryPath, "/app/share"));
+				appModule.getBuildCommands()
+						.add(formatInstall(appModule, getBasePath(remoteUrl), entryPath, "/app/share"));
 			} else {
 				copy("Jar from Maven", file, new File(appDirectory, entryPath), file.lastModified());
 				entry.setType("file");
@@ -751,7 +759,7 @@ public class FlatpakMojo extends AbstractMojo {
 			return url;
 		} else {
 			try {
-				URL u = new URL(url);
+				URL u = new URI(url).toURL();
 				URLConnection conx = u.openConnection();
 				conx.getInputStream().close();
 				return url;

@@ -1,8 +1,7 @@
-package uk.co.bithatch.maven.flatpak.plugin;
+package flatpak.maven.plugin;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlText;
@@ -18,7 +17,7 @@ public class Icon {
 	private String path;
 
 	@JsonProperty(value = "type")
-    @JacksonXmlProperty(isAttribute = true)
+	@JacksonXmlProperty(isAttribute = true)
 	public final String getType() {
 		return type;
 	}
@@ -33,7 +32,7 @@ public class Icon {
 	}
 
 	@JsonProperty(value = "scale")
-    @JacksonXmlProperty(isAttribute = true)
+	@JacksonXmlProperty(isAttribute = true)
 	public final Integer getScale() {
 		return scale;
 	}
@@ -47,7 +46,7 @@ public class Icon {
 	}
 
 	@JsonProperty(value = "width")
-    @JacksonXmlProperty(isAttribute = true)
+	@JacksonXmlProperty(isAttribute = true)
 	public final Integer getWidth() {
 		return width;
 	}
@@ -57,7 +56,7 @@ public class Icon {
 	}
 
 	@JsonProperty(value = "height")
-    @JacksonXmlProperty(isAttribute = true)
+	@JacksonXmlProperty(isAttribute = true)
 	public final Integer getHeight() {
 		return height;
 	}

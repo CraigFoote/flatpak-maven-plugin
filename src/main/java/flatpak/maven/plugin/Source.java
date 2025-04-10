@@ -1,4 +1,4 @@
-package uk.co.bithatch.maven.flatpak.plugin;
+package flatpak.maven.plugin;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;

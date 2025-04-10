@@ -1,4 +1,4 @@
-package uk.co.bithatch.maven.flatpak.plugin;
+package flatpak.maven.plugin;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
