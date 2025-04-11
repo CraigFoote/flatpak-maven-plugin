@@ -171,25 +171,17 @@
 					<publishingServerId>central</publishingServerId>
 				</configuration>
 			</plugin>
-		</plugins>
-	</build>
-	
-	<reporting>
-		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-plugin-plugin</artifactId>
 				<version>4.0.0-beta-1</version>
-				<reportSets>
-					<reportSet>
-						<reports>
-							<report>report</report>
-						</reports>
-					</reportSet>
-				</reportSets>
+				<configuration>
+					<goalPrefix>plugin</goalPrefix>
+					<outputDirectory>target/dir</outputDirectory>
+				</configuration>
 			</plugin>
 		</plugins>
-	</reporting>
+	</build>
 	
 	<dependencyManagement>
 		<dependencies>
