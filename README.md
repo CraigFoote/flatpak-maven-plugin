@@ -3,11 +3,12 @@
 A fork of [maven-flatpak-plugin](https://github.com/bithatch/maven-flatpak-plugin) by Brett Smith.
 
 I've updated the `pom.xml` dependencies.  
-I've added configuration tags for `category`, `runtime`, `runtimeVersion` and `sdk`.  
+I've added configuration tags for `category`, `runtime`, `runtimeVersion`, `sdk` and `gschema` for GSettings.  
 I've also renamed it *flatpak-maven-plugin* in accordance with [maven guidelines](https://maven.apache.org/guides/plugin/guide-java-plugin-development.html#Important_Notice).  
-I'm hoping to enable gsettings schema use.
 
-Original README follows:
+See my [texty3](https://github.com/CraigFoote/ca.footeware.java.texty3) project for example usage.
+
+Original README follows and needs to be reconciled:
 
 ---
 
