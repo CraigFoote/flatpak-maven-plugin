@@ -11,9 +11,11 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.Writer;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.MessageFormat;
@@ -193,6 +195,9 @@ public class FlatpakMojo extends AbstractMojo {
 	@Parameter(required = true)
 	private String sdk;
 
+	@Parameter
+	private String gschema;
+
 	@Override
 	public void execute() throws MojoExecutionException {
 		if (skip) {
@@ -213,10 +218,10 @@ public class FlatpakMojo extends AbstractMojo {
 			appModule.setName(appModuleName);
 			manifest.getModules().add(appModule);
 		}
-		if (appModule.getBuildSystem() == null || appModule.getBuildSystem().equals("")) {
+		if (appModule.getBuildSystem() == null || appModule.getBuildSystem().isEmpty()) {
 			appModule.setBuildSystem(SIMPLE);
 		}
-		if (appModule.getName() == null || appModule.getName().equals("")) {
+		if (appModule.getName() == null || appModule.getName().isEmpty()) {
 			appModule.setName(manifest.getCommand());
 		}
 		if (!SIMPLE.equals(appModule.getBuildSystem())) {
@@ -235,6 +240,7 @@ public class FlatpakMojo extends AbstractMojo {
 			addDesktopEntry(appModule);
 			addMetaInfo(appModule);
 			addFlatpakResource();
+			addGSchema(appModule);
 
 			for (Artifact a : project.getArtifacts()) {
 				doArtifact(appModule, a, classPaths, modulePaths);
@@ -263,8 +269,29 @@ public class FlatpakMojo extends AbstractMojo {
 			try (Writer out = new FileWriter(metaInfoFile)) {
 				writeMetaInfo(metaInfo, out);
 			}
-		} catch (IOException | NoSuchAlgorithmException e) {
+		} catch (IOException | NoSuchAlgorithmException | URISyntaxException e) {
 			throw new MojoExecutionException("Failed to write manifiest.", e);
+		}
+	}
+
+	/**
+	 * Handle Gtk GSetting schema.
+	 * 
+	 * @param appModule {@link Module}
+	 * @throws MojoExecutionException
+	 */
+	private void addGSchema(Module appModule) throws URISyntaxException {
+		if (gschema != null && !gschema.isEmpty()) {
+			// relative to 'target/app/' folder TODO make more configurable
+			String path = ".." + File.separator + ".." + File.separator + new URI(gschema).getPath();
+			String fileName = Paths.get(gschema).getFileName().toString();
+
+			String message = String.format("Adding %s", fileName);
+			logger.info(message);
+
+			appModule.getSources().add(new Source(path));
+			appModule.getBuildCommands().add("install -D " + fileName + " /app/share/glib-2.0/schemas/" + fileName);
+			appModule.getBuildCommands().add("glib-compile-schemas /app/share/glib-2.0/schemas");
 		}
 	}
 
@@ -715,6 +742,7 @@ public class FlatpakMojo extends AbstractMojo {
 
 	private void install(Module appModule, Artifact a, ArtifactResult resolutionResult, File file)
 			throws IOException, NoSuchAlgorithmException {
+		// TODO install schema
 		String entryPath = getFileName(a);
 		String message = String.format("Adding %s", a.getFile().getName());
 		logger.info(message);
