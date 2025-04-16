@@ -36,6 +36,7 @@ import javax.imageio.ImageIO;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.execution.MavenSession;
+import org.apache.maven.model.Developer;
 import org.apache.maven.model.License;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -58,6 +59,13 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+
+import flatpak.maven.plugin.exceptions.MetaInfoException;
+import flatpak.maven.plugin.models.DesktopEntry;
+import flatpak.maven.plugin.models.Manifest;
+import flatpak.maven.plugin.models.MetaInfo;
+import flatpak.maven.plugin.models.Module;
+import flatpak.maven.plugin.models.Source;
 
 @Mojo(threadSafe = true, name = "generate", defaultPhase = LifecyclePhase.PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, requiresProject = true)
 public class FlatpakMojo extends AbstractMojo {
@@ -127,6 +135,7 @@ public class FlatpakMojo extends AbstractMojo {
 	@Parameter
 	private DesktopEntry desktopEntry;
 
+	@Parameter
 	private MetaInfo metaInfo;
 
 	@Parameter(defaultValue = "${project.remoteProjectRepositories}", readonly = true, required = true)
@@ -471,14 +480,31 @@ public class FlatpakMojo extends AbstractMojo {
 				&& !project.getOrganization().getName().isEmpty()) {
 			metaInfo.setProjectGroup(project.getOrganization().getName());
 		}
-		if (metaInfo.getDeveloperName() == null || metaInfo.getDeveloperName().isEmpty()){
-			metaInfo.setDeveloperName(project.getDevelopers().get(0).getName());
+
+		// list of developer names
+		if (metaInfo.getDeveloper() == null) {
+			metaInfo.setDeveloper(getDeveloper());
 		}
 
 		File metaInfoFile = getMetaInfoFile();
 
 		appModule.getBuildCommands().add(formatInstall(metaInfoFile.getName(), "/app/share/appdata"));
 		appModule.getSources().add(new Source(metaInfoFile.getName()));
+	}
+
+	/**
+	 * Get the project developer id and name.
+	 * 
+	 * @return {@link flatpak.maven.plugin.models.Developer}
+	 * @throws MetaInfoException when no developer is found.
+	 */
+	private flatpak.maven.plugin.models.Developer getDeveloper() throws MetaInfoException {
+		if (project.getDevelopers() != null && !project.getDevelopers().isEmpty()) {
+			Developer dev = project.getDevelopers().get(0);
+			return new flatpak.maven.plugin.models.Developer(dev.getId(), dev.getName());
+		} else {
+			throw new MetaInfoException("Developer with id and name is required in pom.");
+		}
 	}
 
 	/**

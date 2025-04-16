@@ -1,4 +1,4 @@
-package flatpak.maven.plugin;
+package flatpak.maven.plugin.models;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -82,7 +82,7 @@ public class Manifest {
 		this.finishArgs = finishArgs;
 	}
 	
-	Module getModule(String name) {
+	public Module getModule(String name) {
 		for(Module module : modules) {
 			if(name.equals(module.getName())) {
 				return module;

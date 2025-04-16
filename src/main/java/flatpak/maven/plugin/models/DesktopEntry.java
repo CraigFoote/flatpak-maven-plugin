@@ -1,4 +1,4 @@
-package flatpak.maven.plugin;
+package flatpak.maven.plugin.models;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

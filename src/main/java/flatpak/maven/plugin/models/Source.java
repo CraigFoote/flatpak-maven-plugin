@@ -1,4 +1,4 @@
-package flatpak.maven.plugin;
+package flatpak.maven.plugin.models;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -14,7 +14,7 @@ public class Source {
 	public Source() {
 	}
 	
-	Source(String path) {
+	public Source(String path) {
 		this.path = path;
 	}
 

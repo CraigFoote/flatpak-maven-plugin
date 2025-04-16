@@ -1,4 +1,4 @@
-package flatpak.maven.plugin;
+package flatpak.maven.plugin.models;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -33,9 +33,10 @@ public class MetaInfo {
 	private String projectGroup;
 	private Map<String, String> url = new LinkedHashMap<>();
 	private List<Icon> icons = new ArrayList<>();
+	private Developer developer;
 
 	@JsonProperty(value = "type")
-    @JacksonXmlProperty(isAttribute = true)
+	@JacksonXmlProperty(isAttribute = true)
 	public final String getType() {
 		return type;
 	}
@@ -150,9 +151,19 @@ public class MetaInfo {
 		this.developerName = developerName;
 	}
 
-    @JacksonXmlElementWrapper(useWrapping = false)
+	@JacksonXmlElementWrapper(useWrapping = false)
 	@JsonProperty(value = "icon", index = 14)
 	public final List<Icon> getIcons() {
 		return icons;
+	}
+
+	@JacksonXmlElementWrapper(useWrapping = false)
+	@JsonProperty(value = "developer", index = 15)
+	public Developer getDeveloper() {
+		return developer;
+	}
+
+	public void setDeveloper(Developer developer) {
+		this.developer = developer;
 	}
 }

@@ -1,4 +1,4 @@
-package flatpak.maven.plugin;
+package flatpak.maven.plugin.models;
 
 import java.util.ArrayList;
 import java.util.List;
