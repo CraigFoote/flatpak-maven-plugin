@@ -1,12 +1,9 @@
 package flatpak.maven.plugin.models;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonRawValue;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
@@ -27,15 +24,14 @@ public class MetaInfo {
 	private String name;
 	private String summary;
 	private String projectLicense;
-	private String metaDataLicense;
+	private String metadataLicense;
 	private String description;
-	private String developerName;
 	private String projectGroup;
-	private Map<String, String> url = new LinkedHashMap<>();
+	private Url url;
 	private List<Icon> icons = new ArrayList<>();
 	private Developer developer;
+	private Launchable launchable;
 
-	@JsonProperty(value = "type")
 	@JacksonXmlProperty(isAttribute = true)
 	public final String getType() {
 		return type;
@@ -45,7 +41,6 @@ public class MetaInfo {
 		this.type = type;
 	}
 
-	@JsonProperty(value = "id", index = 0)
 	public final String getId() {
 		return id;
 	}
@@ -54,7 +49,6 @@ public class MetaInfo {
 		this.id = id;
 	}
 
-	@JsonProperty(value = "merge", index = 3)
 	public final String getMerge() {
 		return merge;
 	}
@@ -63,7 +57,6 @@ public class MetaInfo {
 		this.merge = merge;
 	}
 
-	@JsonProperty(value = "pkgname", index = 4)
 	public final String getPackageName() {
 		return packageName;
 	}
@@ -72,7 +65,6 @@ public class MetaInfo {
 		this.packageName = packageName;
 	}
 
-	@JsonProperty(value = "source_pkgname", index = 5)
 	public final String getSourcePackage() {
 		return sourcePackage;
 	}
@@ -81,7 +73,6 @@ public class MetaInfo {
 		this.sourcePackage = sourcePackage;
 	}
 
-	@JsonProperty(value = "name", index = 6)
 	public final String getName() {
 		return name;
 	}
@@ -90,17 +81,15 @@ public class MetaInfo {
 		this.name = name;
 	}
 
-	@JsonProperty(value = "summary", index = 7)
 	public final String getSummary() {
 		return summary;
 	}
 
-	@JsonProperty(value = "summary", index = 7)
 	public final void setSummary(String summary) {
 		this.summary = summary;
 	}
 
-	@JsonProperty(value = "project_license", index = 8)
+	@JacksonXmlProperty(localName = "project_license")
 	public final String getProjectLicense() {
 		return projectLicense;
 	}
@@ -109,16 +98,15 @@ public class MetaInfo {
 		this.projectLicense = projectLicense;
 	}
 
-	@JsonProperty(value = "metadata_license", index = 9)
-	public final String getMetaDataLicense() {
-		return metaDataLicense;
+	@JacksonXmlProperty(localName = "metadata_license")
+	public final String getMetadataLicense() {
+		return metadataLicense;
 	}
 
-	public final void setMetaDataLicense(String metaDataLicense) {
-		this.metaDataLicense = metaDataLicense;
+	public final void setMetadataLicense(String metaDataLicense) {
+		this.metadataLicense = metaDataLicense;
 	}
 
-	@JsonProperty(value = "description", index = 10)
 	@JsonRawValue
 	public final String getDescription() {
 		return description;
@@ -128,12 +116,20 @@ public class MetaInfo {
 		this.description = description;
 	}
 
-	@JsonProperty(value = "url", index = 11)
-	public final Map<String, String> getUrl() {
+	/**
+	 * @return the url
+	 */
+	public Url getUrl() {
 		return url;
 	}
 
-	@JsonProperty(value = "project_group", index = 12)
+	/**
+	 * @param url the url to set
+	 */
+	public void setUrl(Url url) {
+		this.url = url;
+	}
+
 	public final String getProjectGroup() {
 		return projectGroup;
 	}
@@ -142,28 +138,30 @@ public class MetaInfo {
 		this.projectGroup = projectGroup;
 	}
 
-	@JsonProperty(value = "developer_name", index = 13)
-	public final String getDeveloperName() {
-		return developerName;
-	}
-
-	public final void setDeveloperName(String developerName) {
-		this.developerName = developerName;
-	}
-
 	@JacksonXmlElementWrapper(useWrapping = false)
-	@JsonProperty(value = "icon", index = 14)
 	public final List<Icon> getIcons() {
 		return icons;
 	}
 
-	@JacksonXmlElementWrapper(useWrapping = false)
-	@JsonProperty(value = "developer", index = 15)
 	public Developer getDeveloper() {
 		return developer;
 	}
 
 	public void setDeveloper(Developer developer) {
 		this.developer = developer;
+	}
+
+	/**
+	 * @return the launchable
+	 */
+	public Launchable getLaunchable() {
+		return launchable;
+	}
+
+	/**
+	 * @param launchable the launchable to set
+	 */
+	public void setLaunchable(Launchable launchable) {
+		this.launchable = launchable;
 	}
 }

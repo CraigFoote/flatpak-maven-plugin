@@ -62,10 +62,12 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import flatpak.maven.plugin.exceptions.MetaInfoException;
 import flatpak.maven.plugin.models.DesktopEntry;
+import flatpak.maven.plugin.models.Launchable;
 import flatpak.maven.plugin.models.Manifest;
 import flatpak.maven.plugin.models.MetaInfo;
 import flatpak.maven.plugin.models.Module;
 import flatpak.maven.plugin.models.Source;
+import flatpak.maven.plugin.models.Url;
 
 @Mojo(threadSafe = true, name = "generate", defaultPhase = LifecyclePhase.PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, requiresProject = true)
 public class FlatpakMojo extends AbstractMojo {
@@ -287,11 +289,10 @@ public class FlatpakMojo extends AbstractMojo {
 	 * Handle Gtk GSetting schema.
 	 * 
 	 * @param appModule {@link Module}
-	 * @throws MojoExecutionException
+	 * @throws MojoExecutionException if 'gschema' is an invalid uri
 	 */
 	private void addGSchema(Module appModule) throws URISyntaxException {
 		if (gschema != null && !gschema.isEmpty()) {
-			// relative to 'target/app/' folder TODO make more configurable
 			String path = ".." + File.separator + ".." + File.separator + new URI(gschema).getPath();
 			String fileName = Paths.get(gschema).getFileName().toString();
 
@@ -456,40 +457,57 @@ public class FlatpakMojo extends AbstractMojo {
 		if (metaInfo.getProjectLicense() == null || metaInfo.getProjectLicense().isEmpty()) {
 			metaInfo.setProjectLicense(getProjectLicenseName());
 		}
-		if (metaInfo.getMetaDataLicense() == null || metaInfo.getMetaDataLicense().isEmpty()) {
-			metaInfo.setMetaDataLicense(getMetaDataLicenseName());
+		if (metaInfo.getMetadataLicense() == null || metaInfo.getMetadataLicense().isEmpty()) {
+			metaInfo.setMetadataLicense(getMetaDataLicenseName());
 		}
-		if (!metaInfo.getUrl().containsKey("homePage") && project.getUrl() != null) {
-			metaInfo.getUrl().put("homepage", project.getUrl());
+
+		Url metaInfoUrl = getMetaInfoUrl();
+		if (metaInfoUrl != null) {
+			metaInfo.setUrl(metaInfoUrl);
 		}
-		if (!metaInfo.getUrl().containsKey("vcs-browserPage") && project.getScm() != null
-				&& project.getScm().getUrl() != null && !project.getScm().getUrl().isEmpty()) {
-			metaInfo.getUrl().put("vcs-browser", project.getScm().getUrl());
-		}
-		if (!metaInfo.getUrl().containsKey("vcs-browserPage") && project.getIssueManagement() != null
-				&& project.getIssueManagement().getUrl() != null && !project.getIssueManagement().getUrl().isEmpty()) {
-			metaInfo.getUrl().put("bugtracker", project.getIssueManagement().getUrl());
-		}
-		if (!metaInfo.getUrl().containsKey("contact") && !project.getDevelopers().isEmpty()
-				&& project.getDevelopers().get(0).getUrl() != null
-				&& !project.getDevelopers().get(0).getUrl().equals("")) {
-			metaInfo.getUrl().put("contact", project.getDevelopers().get(0).getUrl());
-		}
+
 		if ((metaInfo.getProjectGroup() == null || metaInfo.getProjectGroup().isEmpty())
 				&& project.getOrganization() != null && project.getOrganization().getName() != null
 				&& !project.getOrganization().getName().isEmpty()) {
 			metaInfo.setProjectGroup(project.getOrganization().getName());
 		}
 
-		// list of developer names
 		if (metaInfo.getDeveloper() == null) {
 			metaInfo.setDeveloper(getDeveloper());
+		}
+
+		if (metaInfo.getLaunchable() == null) {
+			metaInfo.setLaunchable(new Launchable("desktop-id", manifest.getAppId() + ".desktop"));
 		}
 
 		File metaInfoFile = getMetaInfoFile();
 
 		appModule.getBuildCommands().add(formatInstall(metaInfoFile.getName(), "/app/share/appdata"));
 		appModule.getSources().add(new Source(metaInfoFile.getName()));
+	}
+
+	/**
+	 * Calculate the metaInfo url based on pom elements.
+	 * 
+	 * @return {@link Url}
+	 */
+	private Url getMetaInfoUrl() {
+		Url url = null;
+		if (project.getUrl() != null) {
+			url = new Url("homepage", project.getUrl());
+		} else if (project.getScm() != null && project.getScm().getUrl() != null
+				&& !project.getScm().getUrl().isEmpty()) {
+			url = new Url("vcs-browser", project.getScm().getUrl());
+		} else if (project.getIssueManagement() != null && project.getIssueManagement().getUrl() != null
+				&& !project.getIssueManagement().getUrl().isEmpty()) {
+			url = new Url("bugtracker", project.getIssueManagement().getUrl());
+		} else if (project.getDevelopers() != null && !project.getDevelopers().isEmpty()) {
+			Developer developer = project.getDevelopers().get(0);
+			if (developer.getUrl() != null && !developer.getUrl().isEmpty()) {
+				url = new Url("contact", developer.getUrl());
+			}
+		}
+		return url;
 	}
 
 	/**
@@ -730,7 +748,7 @@ public class FlatpakMojo extends AbstractMojo {
 	private void writeMetaInfo(MetaInfo metaInfo, Writer writer) throws IOException {
 		XmlMapper mapper = new XmlMapper();
 		new PrintWriter(writer, true).println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-		mapper.writeValue(writer, metaInfo);
+		mapper.writerWithDefaultPrettyPrinter().writeValue(writer, metaInfo);
 	}
 
 	private String normalisePackage(String pkg) {
