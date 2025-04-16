@@ -1,0 +1,23 @@
+/**
+ * 
+ */
+package flatpak.maven.plugin;
+
+/**
+ * Describes an exception that occurs during metaInfo xml file.
+ * 
+ * @author Footeware.ca
+ */
+public class MetaInfoException extends Exception {
+
+	private static final long serialVersionUID = 1L;
+
+	public MetaInfoException(String message) {
+		super(message);
+	}
+
+	public MetaInfoException(String message, Throwable throwable) {
+		super(message, throwable);
+	}
+
+}

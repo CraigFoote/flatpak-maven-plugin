@@ -36,6 +36,7 @@ import javax.imageio.ImageIO;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.execution.MavenSession;
+import org.apache.maven.model.License;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Component;
@@ -126,7 +127,6 @@ public class FlatpakMojo extends AbstractMojo {
 	@Parameter
 	private DesktopEntry desktopEntry;
 
-	@Parameter
 	private MetaInfo metaInfo;
 
 	@Parameter(defaultValue = "${project.remoteProjectRepositories}", readonly = true, required = true)
@@ -269,7 +269,7 @@ public class FlatpakMojo extends AbstractMojo {
 			try (Writer out = new FileWriter(metaInfoFile)) {
 				writeMetaInfo(metaInfo, out);
 			}
-		} catch (IOException | NoSuchAlgorithmException | URISyntaxException e) {
+		} catch (IOException | NoSuchAlgorithmException | URISyntaxException | MetaInfoException e) {
 			throw new MojoExecutionException("Failed to write manifiest.", e);
 		}
 	}
@@ -418,7 +418,7 @@ public class FlatpakMojo extends AbstractMojo {
 		}));
 	}
 
-	private void addMetaInfo(Module appModule) {
+	private void addMetaInfo(Module appModule) throws MetaInfoException {
 		if (metaInfo == null) {
 			metaInfo = new MetaInfo();
 		}
@@ -444,13 +444,11 @@ public class FlatpakMojo extends AbstractMojo {
 				&& project.getDescription() != null && !project.getDescription().isEmpty()) {
 			metaInfo.setDescription("<p>" + project.getDescription() + "</p>");
 		}
-		if ((metaInfo.getProjectLicense() == null || metaInfo.getProjectLicense().isEmpty())
-				&& !project.getLicenses().isEmpty()) {
-			metaInfo.setProjectLicense(project.getLicenses().get(0).getName());
+		if (metaInfo.getProjectLicense() == null || metaInfo.getProjectLicense().isEmpty()) {
+			metaInfo.setProjectLicense(getProjectLicenseName());
 		}
-		if ((metaInfo.getMetaDataLicense() == null || metaInfo.getMetaDataLicense().isEmpty())
-				&& metaInfo.getProjectLicense() != null && !metaInfo.getProjectLicense().isEmpty()) {
-			metaInfo.setMetaDataLicense(metaInfo.getProjectLicense());
+		if (metaInfo.getMetaDataLicense() == null || metaInfo.getMetaDataLicense().isEmpty()) {
+			metaInfo.setMetaDataLicense(getMetaDataLicenseName());
 		}
 		if (!metaInfo.getUrl().containsKey("homePage") && project.getUrl() != null) {
 			metaInfo.getUrl().put("homepage", project.getUrl());
@@ -473,9 +471,7 @@ public class FlatpakMojo extends AbstractMojo {
 				&& !project.getOrganization().getName().isEmpty()) {
 			metaInfo.setProjectGroup(project.getOrganization().getName());
 		}
-
-		if ((metaInfo.getDeveloperName() == null || metaInfo.getDeveloperName().isEmpty())
-				&& !project.getDevelopers().isEmpty()) {
+		if (metaInfo.getDeveloperName() == null || metaInfo.getDeveloperName().isEmpty()){
 			metaInfo.setDeveloperName(project.getDevelopers().get(0).getName());
 		}
 
@@ -483,6 +479,54 @@ public class FlatpakMojo extends AbstractMojo {
 
 		appModule.getBuildCommands().add(formatInstall(metaInfoFile.getName(), "/app/share/appdata"));
 		appModule.getSources().add(new Source(metaInfoFile.getName()));
+	}
+
+	/**
+	 * Get the project license name from pom tags.
+	 * 
+	 * @return {@link String}
+	 * @throws MetaInfoException if no project license is specified
+	 */
+	private String getProjectLicenseName() throws MetaInfoException {
+		// no default - must supply project license in pom
+		String projectLicenseName = null;
+		if (!project.getLicenses().isEmpty()) {
+			// iterate and find metadata license
+			for (License license : project.getLicenses()) {
+				if (license.getComments().toLowerCase().contains("project")) {
+					projectLicenseName = license.getName();
+					break;
+				}
+			}
+		}
+		if (projectLicenseName == null || projectLicenseName.isEmpty()) {
+			throw new MetaInfoException("Project license must be set with comment value 'project'.");
+		}
+		return projectLicenseName;
+	}
+
+	/**
+	 * Get the metadata license name from pom tags. Defaults to "FSAP" if no
+	 * metadata license is found in pom.
+	 * 
+	 * @return {@link String}
+	 */
+	private String getMetaDataLicenseName() {
+		String metaDataLicenseName = null;
+		if (!project.getLicenses().isEmpty()) {
+			// iterate and find metadata license
+			for (License license : project.getLicenses()) {
+				if (license.getComments().toLowerCase().contains("metadata")) {
+					metaDataLicenseName = license.getName();
+					break;
+				}
+			}
+		}
+		if (metaDataLicenseName == null || metaDataLicenseName.isEmpty()) {
+			logger.info("Required metadata license not specified in pom.xml. Defaulting to 'FSFAP'.");
+			metaDataLicenseName = "FSFAP";
+		}
+		return metaDataLicenseName;
 	}
 
 	private String firstSentence(String description) {
