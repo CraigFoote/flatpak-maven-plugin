@@ -4,7 +4,7 @@
 package flatpak.maven.plugin.exceptions;
 
 /**
- * Describes an exception that occurs during metaInfo xml file.
+ * Describes an exception that occurs during metaInfo xml file generation.
  * 
  * @author Footeware.ca
  */
