@@ -17,6 +17,7 @@ public class Manifest {
 	private String command;
 	private List<Module> modules = new ArrayList<>();
 	private List<String> finishArgs = new ArrayList<>();
+	private String categories;
 
 	@JsonProperty(value = "app-id", index = 0)
 	public final String getAppId() {
@@ -27,7 +28,7 @@ public class Manifest {
 		this.appId = appId;
 	}
 
-	@JsonProperty(value = "runtime", index= 1)
+	@JsonProperty(value = "runtime", index = 1)
 	public final String getRuntime() {
 		return runtime;
 	}
@@ -36,7 +37,7 @@ public class Manifest {
 		this.runtime = runtime;
 	}
 
-	@JsonProperty(value = "runtime-version", index= 2)
+	@JsonProperty(value = "runtime-version", index = 2)
 	public final String getRuntimeVersion() {
 		return runtimeVersion;
 	}
@@ -45,7 +46,7 @@ public class Manifest {
 		this.runtimeVersion = runtimeVersion;
 	}
 
-	@JsonProperty(value = "sdk", index= 3)
+	@JsonProperty(value = "sdk", index = 3)
 	public final String getSdk() {
 		return sdk;
 	}
@@ -72,6 +73,15 @@ public class Manifest {
 	public final List<Module> getModules() {
 		return modules;
 	}
+	
+	@JsonProperty(value = "categories", index = 7)
+	public final void setCategories(String categories) {
+		this.categories = categories;
+	}
+	
+	public final String getCategories() {
+		return categories;
+	}
 
 	public final List<String> getFinishArgs() {
 		return finishArgs;
@@ -81,10 +91,10 @@ public class Manifest {
 	public final void setFinishArgs(List<String> finishArgs) {
 		this.finishArgs = finishArgs;
 	}
-	
+
 	public Module getModule(String name) {
-		for(Module module : modules) {
-			if(name.equals(module.getName())) {
+		for (Module module : modules) {
+			if (name.equals(module.getName())) {
 				return module;
 			}
 		}

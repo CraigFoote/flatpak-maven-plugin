@@ -15,6 +15,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -281,7 +282,7 @@ public class FlatpakMojo extends AbstractMojo {
 				writeMetaInfo(metaInfo, out);
 			}
 		} catch (IOException | NoSuchAlgorithmException | URISyntaxException | MetaInfoException e) {
-			throw new MojoExecutionException("Failed to write manifiest.", e);
+			throw new MojoExecutionException("Failed to write manifest.", e);
 		}
 	}
 
