@@ -226,7 +226,7 @@ public class FlatpakMojo extends AbstractMojo {
 		}
 		if (!desktopEntry.isIgnore()) {
 			desktopEntry.setType("Application");
-			desktopEntry.setName(project.getName());
+			desktopEntry.setName(project.getArtifactId());
 			desktopEntry.setComment(project.getDescription());
 			desktopEntry.setExec(manifest.getCommand());
 			desktopEntry.setIcon(manifest.getAppId());
@@ -958,9 +958,10 @@ public class FlatpakMojo extends AbstractMojo {
 		try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(out))) {
 			writer.println("[Desktop Entry]");
 			writer.println("Version=1.0");
-			writer.println(String.format("Type=%s", desktopEntry.getType()));
+			writer.println(String.format("Name=%s", desktopEntry.getName()));
 			writer.println(String.format("Exec=%s", desktopEntry.getExec()));
 			writer.println(String.format("Icon=%s", desktopEntry.getIcon()));
+			writer.println(String.format("Type=%s", desktopEntry.getType()));
 			if (desktopEntry.getComment() != null && !desktopEntry.getComment().isEmpty()) {
 				writer.println(String.format("Comment=%s", desktopEntry.getComment()));
 			}

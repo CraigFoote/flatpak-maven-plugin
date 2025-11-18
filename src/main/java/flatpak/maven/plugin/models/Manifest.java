@@ -9,8 +9,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonSetter;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({ "appId", "command", "runtime", "runtimeVersion", "sdk", "sdkExtensions", "modules", "categories",
-		"finishArgs" })
+@JsonPropertyOrder({ "app-id", "command", "runtime", "runtimeVersion", "sdk", "sdkExtensions", "modules", "categories",
+		"finish-args" })
 public class Manifest {
 
 	private String appId;
@@ -23,7 +23,7 @@ public class Manifest {
 	private String sdk;
 	private List<String> sdkExtensions = new ArrayList<>();
 
-	@JsonGetter("appId")
+	@JsonGetter("app-id")
 	public final String getAppId() {
 		return appId;
 	}
@@ -38,7 +38,7 @@ public class Manifest {
 		return command;
 	}
 
-	@JsonGetter("finishArgs")
+	@JsonGetter("finish-args")
 	public final List<String> getFinishArgs() {
 		return finishArgs;
 	}
