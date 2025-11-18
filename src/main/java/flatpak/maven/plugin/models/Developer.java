@@ -5,15 +5,11 @@ package flatpak.maven.plugin.models;
 
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 
-/**
- * Encapsulates developer information for flatpak metainfo.xml file generation.
- * 
- * @author Footeware.ca
- */
 public class Developer {
 
 	private String id;
 	private String name;
+	// TODO email, etc
 
 	/**
 	 * Constructor.

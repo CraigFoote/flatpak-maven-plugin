@@ -116,16 +116,10 @@ public class MetaInfo {
 		this.description = description;
 	}
 
-	/**
-	 * @return the url
-	 */
 	public Url getUrl() {
 		return url;
 	}
 
-	/**
-	 * @param url the url to set
-	 */
 	public void setUrl(Url url) {
 		this.url = url;
 	}
@@ -151,16 +145,10 @@ public class MetaInfo {
 		this.developer = developer;
 	}
 
-	/**
-	 * @return the launchable
-	 */
 	public Launchable getLaunchable() {
 		return launchable;
 	}
 
-	/**
-	 * @param launchable the launchable to set
-	 */
 	public void setLaunchable(Launchable launchable) {
 		this.launchable = launchable;
 	}
