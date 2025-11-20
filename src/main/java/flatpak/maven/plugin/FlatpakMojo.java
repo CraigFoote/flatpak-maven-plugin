@@ -310,7 +310,7 @@ public class FlatpakMojo extends AbstractMojo {
 		}
 
 		metaInfo.setId(manifest.getAppId());
-		metaInfo.setName(project.getName());
+		metaInfo.setName(project.getArtifactId());
 		metaInfo.setSummary(firstSentence(project.getDescription()));
 		metaInfo.setDescription("<p>" + project.getDescription() + "</p>");
 		metaInfo.setProjectLicense(getProjectLicenseName());
@@ -436,10 +436,6 @@ public class FlatpakMojo extends AbstractMojo {
 		String message = String.format("Processing %s", a.getFile().getName());
 		LOGGER.debug(message);
 
-		/*
-		 * new DefaultArtifact(String) expects format:
-		 * <groupId>:<artifactId>[:<extension>[:<classifier>]]:<version>}
-		 */
 		StringBuilder builder = new StringBuilder();
 		builder.append(a.getGroupId());
 		builder.append(":");
