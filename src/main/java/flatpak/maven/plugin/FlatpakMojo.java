@@ -310,7 +310,7 @@ public class FlatpakMojo extends AbstractMojo {
 		}
 
 		metaInfo.setId(manifest.getAppId());
-		metaInfo.setName(project.getArtifactId());
+		metaInfo.setName(project.getName());
 		metaInfo.setSummary(firstSentence(project.getDescription()));
 		metaInfo.setDescription("<p>" + project.getDescription() + "</p>");
 		metaInfo.setProjectLicense(getProjectLicenseName());
