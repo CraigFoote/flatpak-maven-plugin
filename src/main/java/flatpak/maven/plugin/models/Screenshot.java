@@ -31,12 +31,12 @@ public class Screenshot {
 		this.caption = caption;
 	}
 
-	public void setType(String type) {
-		this.type = type;
-	}
-
 	@JacksonXmlProperty(localName = "image")
 	public void setImage(Image image) {
 		this.image = image;
+	}
+
+	public void setType(String type) {
+		this.type = type;
 	}
 }

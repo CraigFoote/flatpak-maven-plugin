@@ -7,14 +7,9 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlText;
 @JacksonXmlRootElement(localName = "color")
 public class Color {
 
-	private String value;
 	private String schemePreference;
 	private String type = "primary";
-
-	@JacksonXmlText
-	public String getValue() {
-		return value;
-	}
+	private String value;
 
 	@JacksonXmlProperty(localName = "scheme_preference", isAttribute = true)
 	public String getSchemePreference() {
@@ -26,8 +21,9 @@ public class Color {
 		return type;
 	}
 
-	public void setValue(String value) {
-		this.value = value;
+	@JacksonXmlText
+	public String getValue() {
+		return value;
 	}
 
 	public void setSchemePreference(String schemePreference) {
@@ -36,5 +32,9 @@ public class Color {
 
 	public void setType(String type) {
 		this.type = type;
+	}
+
+	public void setValue(String value) {
+		this.value = value;
 	}
 }

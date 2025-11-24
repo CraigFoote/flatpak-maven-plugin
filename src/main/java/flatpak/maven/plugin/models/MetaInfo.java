@@ -112,6 +112,10 @@ public class MetaInfo {
 		return url;
 	}
 
+	public void setBranding(Branding branding) {
+		this.branding = branding;
+	}
+
 	public final void setDescription(String description) {
 		this.description = description;
 	}
@@ -166,9 +170,5 @@ public class MetaInfo {
 
 	public void setUrl(Url url) {
 		this.url = url;
-	}
-
-	public void setBranding(Branding branding) {
-		this.branding = branding;
 	}
 }

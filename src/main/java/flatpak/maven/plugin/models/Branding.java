@@ -11,12 +11,12 @@ public class Branding {
 	@JacksonXmlProperty(localName = "color")
 	private List<Color> colors = new ArrayList<>();
 
-	public void setColors(List<Color> colors) {
-		this.colors = colors;
-	}
-
 	@JacksonXmlElementWrapper(useWrapping = false)
 	public List<Color> getColors() {
 		return colors;
+	}
+
+	public void setColors(List<Color> colors) {
+		this.colors = colors;
 	}
 }
