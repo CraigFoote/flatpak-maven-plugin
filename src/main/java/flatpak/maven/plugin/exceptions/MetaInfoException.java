@@ -1,11 +1,11 @@
 /**
- * 
+ *
  */
 package flatpak.maven.plugin.exceptions;
 
 /**
  * Describes an exception that occurs during metaInfo xml file generation.
- * 
+ *
  * @author Footeware.ca
  */
 public class MetaInfoException extends Exception {

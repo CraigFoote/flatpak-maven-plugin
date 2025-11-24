@@ -10,16 +10,16 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlText;
 @JacksonXmlRootElement(localName = "icon")
 public class Icon {
 
+	private Integer height;
+	private String path;
+	private Integer scale;
 	private String type;
 	private Integer width;
-	private Integer height;
-	private Integer scale;
-	private String path;
 
-	@JsonProperty(value = "type")
+	@JsonProperty(value = "height")
 	@JacksonXmlProperty(isAttribute = true)
-	public final String getType() {
-		return type;
+	public final Integer getHeight() {
+		return height;
 	}
 
 	@JacksonXmlText
@@ -27,14 +27,30 @@ public class Icon {
 		return path;
 	}
 
-	public final void setPath(String path) {
-		this.path = path;
-	}
-
 	@JsonProperty(value = "scale")
 	@JacksonXmlProperty(isAttribute = true)
 	public final Integer getScale() {
 		return scale;
+	}
+
+	@JsonProperty(value = "type")
+	@JacksonXmlProperty(isAttribute = true)
+	public final String getType() {
+		return type;
+	}
+
+	@JsonProperty(value = "width")
+	@JacksonXmlProperty(isAttribute = true)
+	public final Integer getWidth() {
+		return width;
+	}
+
+	public final void setHeight(Integer height) {
+		this.height = height;
+	}
+
+	public final void setPath(String path) {
+		this.path = path;
 	}
 
 	public final void setScale(Integer scale) {
@@ -45,23 +61,7 @@ public class Icon {
 		this.type = type;
 	}
 
-	@JsonProperty(value = "width")
-	@JacksonXmlProperty(isAttribute = true)
-	public final Integer getWidth() {
-		return width;
-	}
-
 	public final void setWidth(Integer width) {
 		this.width = width;
-	}
-
-	@JsonProperty(value = "height")
-	@JacksonXmlProperty(isAttribute = true)
-	public final Integer getHeight() {
-		return height;
-	}
-
-	public final void setHeight(Integer height) {
-		this.height = height;
 	}
 }

@@ -6,6 +6,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
@@ -15,12 +16,13 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashSet;
@@ -32,13 +34,13 @@ import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 
 import javax.imageio.ImageIO;
+import javax.inject.Inject;
 
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Developer;
 import org.apache.maven.model.License;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -58,14 +60,17 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlText;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import flatpak.maven.plugin.exceptions.MetaInfoException;
+import flatpak.maven.plugin.models.Branding;
 import flatpak.maven.plugin.models.DesktopEntry;
 import flatpak.maven.plugin.models.Launchable;
 import flatpak.maven.plugin.models.Manifest;
 import flatpak.maven.plugin.models.MetaInfo;
 import flatpak.maven.plugin.models.Module;
+import flatpak.maven.plugin.models.Screenshot;
 import flatpak.maven.plugin.models.Source;
 import flatpak.maven.plugin.models.Url;
 
@@ -73,7 +78,6 @@ import flatpak.maven.plugin.models.Url;
 public class FlatpakMojo extends AbstractMojo {
 
 	private static final String APP_SHARE = "/app/share";
-	private static final Logger LOGGER = LoggerFactory.getLogger(FlatpakMojo.class);
 	private static final String OPENJDK = "openjdk";
 	private static final String SIMPLE = "simple";
 
@@ -102,14 +106,14 @@ public class FlatpakMojo extends AbstractMojo {
 	@Parameter(defaultValue = "false")
 	private boolean attachedArtifacts = true;
 
-	@Parameter
-	private String startupWMClass;
-
 	/**
 	 * List of automatic modules
 	 */
 	@Parameter
 	private List<String> automaticArtifacts;
+
+	@Parameter
+	private Branding branding;
 
 	/**
 	 * The string for the "categories" property in the generated .desktop file.
@@ -157,6 +161,8 @@ public class FlatpakMojo extends AbstractMojo {
 	@Parameter
 	private String[] launcherPreCommands;
 
+	private final Logger logger = LoggerFactory.getLogger(FlatpakMojo.class);
+
 	@Parameter
 	private boolean mainArtifactIsModule;
 
@@ -181,7 +187,6 @@ public class FlatpakMojo extends AbstractMojo {
 	@Parameter(defaultValue = "${project.remoteProjectRepositories}", readonly = true, required = true)
 	private List<RemoteRepository> repositories;
 
-	@Component
 	private RepositorySystem repoSystem;
 
 	@Parameter(required = true)
@@ -191,7 +196,7 @@ public class FlatpakMojo extends AbstractMojo {
 	private String runtimeVersion;
 
 	@Parameter
-	private File screenshotsDirectory; // TODO
+	private List<Screenshot> screenshots;
 
 	@Parameter(required = true)
 	private String sdk;
@@ -201,6 +206,9 @@ public class FlatpakMojo extends AbstractMojo {
 
 	@Parameter
 	private String splashPath; // TODO
+
+	@Parameter
+	private String startupWMClass;
 
 	/**
 	 * List of system modules (overrides automatic detection of type)
@@ -219,6 +227,18 @@ public class FlatpakMojo extends AbstractMojo {
 
 	@Parameter
 	private List<String> vmArgs;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param repoSystem {@link RepositorySystem}
+	 */
+	@Inject
+	public FlatpakMojo(RepositorySystem repoSystem) {
+		this.repoSystem = repoSystem;
+		this.metaInfo = new MetaInfo();
+		this.manifest = new Manifest();
+	}
 
 	private void addDesktopEntry(Module appModule) {
 		if (desktopEntry == null) {
@@ -253,7 +273,7 @@ public class FlatpakMojo extends AbstractMojo {
 			String fileName = Paths.get(gschema).getFileName().toString();
 
 			String message = String.format("Adding %s", fileName);
-			LOGGER.info(message);
+			logger.info(message);
 
 			appModule.getSources().add(new Source(path));
 			appModule.getBuildCommands().add("install -D " + fileName + " /app/share/glib-2.0/schemas/" + fileName);
@@ -272,6 +292,19 @@ public class FlatpakMojo extends AbstractMojo {
 			appModule.getSources().add(new Source(appIconFileName));
 		}
 	}
+
+//	private void addImageFiles() throws IOException {
+//		for (File f : getImageFiles(new File("src/main/resources/screenshots/"))) {
+//			File imageFile = new File(appDirectory, f.getName());
+//			copy("Copying screenshot to flatpak build folder.", f, imageFile, f.lastModified());
+//			metaInfo.getScreenshots().add(f.getName());
+//		}
+//
+//		for (File f : getImageFiles(thumbnailsDirectory)) {
+//			copy("Copying thumbnail to flatpak build folder.", f, new File(appDirectory, f.getName()),
+//					f.lastModified());
+//		}
+//	}
 
 	private void addLauncher(Module appModule, List<String> classPaths, List<String> modulePaths,
 			boolean mainArtifactIsModule) throws IOException {
@@ -298,9 +331,6 @@ public class FlatpakMojo extends AbstractMojo {
 	}
 
 	private void addMetaInfo(Module appModule) throws MetaInfoException {
-		if (metaInfo == null) {
-			metaInfo = new MetaInfo();
-		}
 		if (metaInfo.getType() == null || desktopEntry.getType().isEmpty()) {
 			if (desktopEntry == null || desktopEntry.isIgnore()) {
 				metaInfo.setType("console-application");
@@ -333,6 +363,27 @@ public class FlatpakMojo extends AbstractMojo {
 
 		if (metaInfo.getLaunchable() == null) {
 			metaInfo.setLaunchable(new Launchable("desktop-id", manifest.getAppId() + ".desktop"));
+		}
+
+		for (Screenshot screenshot : screenshots) {
+			metaInfo.getScreenshots().add(screenshot);
+			URI uri = URI.create(screenshot.getImage().getValue());
+			File sourceFile;
+			try {
+				sourceFile = fileFromUri(uri);
+			} catch (IOException e) {
+				throw new MetaInfoException(e.getMessage());
+			}
+			File destFile = new File(appDirectory, sourceFile.getName());
+			try {
+				copy("Copying screenshot to flatpak build folder.", sourceFile, destFile, sourceFile.lastModified());
+			} catch (IOException e) {
+				throw new MetaInfoException(e.getMessage());
+			}
+		}
+
+		if (this.branding != null) {
+			this.metaInfo.setBranding(this.branding);
 		}
 
 		File metaInfoFile = getMetaInfoFile();
@@ -380,9 +431,9 @@ public class FlatpakMojo extends AbstractMojo {
 			File splashfile = new File(splashPath);
 			String ext = getExtension(splashPath);
 			String splashFileName = manifest.getAppId() + "." + ext;
-			copy("Copy splash file to flatpak build directory.", splashfile, new File(appDirectory, splashFileName), splashfile.lastModified());
-			appModule.getBuildCommands().add(formatInstall(splashFileName,
-					"/app/share/pixmaps/" + manifest.getAppId() + ".splash." + getExtension(splashPath) + "/apps"));
+			copy("Copy splash file to flatpak build directory.", splashfile, new File(appDirectory, splashFileName),
+					splashfile.lastModified());
+			appModule.getBuildCommands().add(formatInstall(splashFileName, "/app/share/pixmaps"));
 			appModule.getSources().add(new Source(splashFileName));
 		}
 	}
@@ -409,7 +460,7 @@ public class FlatpakMojo extends AbstractMojo {
 
 	private void copy(String reason, File p1, File p2, long mod) throws IOException {
 		String message = String.format("Copy %s - %s to %s", reason, p1.getAbsolutePath(), p2.getAbsolutePath());
-		LOGGER.debug(message);
+		logger.debug(message);
 		p2.getParentFile().mkdirs();
 		try (OutputStream out = new FileOutputStream(p2)) {
 			Files.copy(p1.toPath(), out);
@@ -420,21 +471,10 @@ public class FlatpakMojo extends AbstractMojo {
 		}
 	}
 
-	private void copyImageFiles() throws IOException {
-		for (File f : getImageFiles("screenshots", screenshotsDirectory)) {
-			copy("Copying screenshots to flatpak build folder.", f, new File(appDirectory, f.getName()),
-					f.lastModified());
-		}
-		for (File f : getImageFiles("thumbnails", thumbnailsDirectory)) {
-			copy("Copying thumbnails to flatpak build folder.", f, new File(appDirectory, f.getName()),
-					f.lastModified());
-		}
-	}
-
 	private boolean doArtifact(Module appModule, org.apache.maven.artifact.Artifact a, List<String> classPaths,
 			List<String> modulePaths) throws MojoExecutionException, IOException, NoSuchAlgorithmException {
 		String message = String.format("Processing %s", a.getFile().getName());
-		LOGGER.debug(message);
+		logger.debug(message);
 
 		StringBuilder builder = new StringBuilder();
 		builder.append(a.getGroupId());
@@ -460,7 +500,7 @@ public class FlatpakMojo extends AbstractMojo {
 
 		if (containsArtifact(excludeArtifacts, aetherArtifact)) {
 			message = String.format("Artifact %s is explicitly excluded.", a.getArtifactId());
-			LOGGER.info(message);
+			logger.info(message);
 			return false;
 		}
 
@@ -469,7 +509,7 @@ public class FlatpakMojo extends AbstractMojo {
 			message = String.format(
 					"Artifact %s has no attached file. Its content will not be copied in the target model directory.",
 					aetherArtifact.getArtifactId());
-			LOGGER.warn(message);
+			logger.warn(message);
 			return false;
 		}
 
@@ -508,7 +548,6 @@ public class FlatpakMojo extends AbstractMojo {
 			addSplash(appModule);
 			addDesktopEntry(appModule);
 			addMetaInfo(appModule);
-			copyImageFiles();
 			addGSchema(appModule);
 
 			for (org.apache.maven.artifact.Artifact a : project.getArtifacts()) {
@@ -541,6 +580,23 @@ public class FlatpakMojo extends AbstractMojo {
 		} catch (IOException | NoSuchAlgorithmException | URISyntaxException | MetaInfoException e) {
 			throw new MojoExecutionException("Failed to write manifest.", e);
 		}
+	}
+
+	private File fileFromUri(URI uri) throws IOException {
+		URL url = uri.toURL();
+		URLConnection connection = url.openConnection();
+		connection.setConnectTimeout(5000);
+		connection.setReadTimeout(15000);
+
+		String name = Paths.get(uri.getPath()).getFileName().toString();
+		Path target = appDirectory.toPath().resolve(name);
+
+		try (InputStream in = connection.getInputStream()) {
+			Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
+		}
+
+		target.toFile().setLastModified(connection.getLastModified());
+		return target.toFile();
 	}
 
 	private String firstSentence(String description) {
@@ -630,30 +686,10 @@ public class FlatpakMojo extends AbstractMojo {
 			}
 		} catch (IOException e) {
 			String message = String.format("Unable to read icon file %s.", iconFile);
-			LOGGER.error(message);
+			logger.error(message);
 		}
 		// fallback
 		return "256x256";
-	}
-
-	private List<File> getImageFiles(File dir) {
-		if (!dir.exists()) {
-			return new ArrayList<>();
-		}
-		return Arrays.asList(dir.listFiles((d, n) -> {
-			System.out.println("*** getImageFiles, d=" + d + ", n=" + n); // TODO
-			for (String ext : imageTypes) {
-				if (n.toLowerCase().endsWith("." + ext)) {
-					return true;
-				}
-			}
-			return false;
-		}));
-	}
-
-	private List<File> getImageFiles(String type, File root) {
-		File dir = resolveFlatpakDataDir(type, root);
-		return getImageFiles(dir);
 	}
 
 	/**
@@ -674,7 +710,7 @@ public class FlatpakMojo extends AbstractMojo {
 			}
 		}
 		if (metaDataLicenseName == null || metaDataLicenseName.isEmpty()) {
-			LOGGER.info("Required metadata license not specified in pom.xml. Defaulting to 'FSFAP'.");
+			logger.info("Required metadata license not specified in pom.xml. Defaulting to 'FSFAP'.");
 			metaDataLicenseName = "FSFAP";
 		}
 		return metaDataLicenseName;
@@ -710,7 +746,7 @@ public class FlatpakMojo extends AbstractMojo {
 
 	/**
 	 * Get the project license name from pom tags, e.g.:
-	 * 
+	 *
 	 * <pre>{@code
 	 * <licenses>
 	 *   <license>
@@ -718,7 +754,7 @@ public class FlatpakMojo extends AbstractMojo {
 	 *     <url>https://spdx.org/licenses/GPL-3.0-or-later.html</url>
 	 *     <distribution>repo</distribution>
 	 *     <comments>project</comments>
-	 *     </license>
+	 *   </license>
 	 * </licenses>
 	 *}</pre>
 	 *
@@ -748,7 +784,7 @@ public class FlatpakMojo extends AbstractMojo {
 		// TODO install schema
 		String entryPath = getFileName(a);
 		String message = String.format("Adding %s", a.getFile().getName());
-		LOGGER.info(message);
+		logger.info(message);
 		String remoteUrl = validateUrl(mavenUrl(resolutionResult));
 		Source entry = new Source();
 		if (remotesFromOriginalSource) {
@@ -866,12 +902,21 @@ public class FlatpakMojo extends AbstractMojo {
 		return null;
 	}
 
-	private File resolveFlatpakDataDir(String type, File specific) {
-		if (specific == null) {
-			return new File(flatpakDataDirectory, type);
-		} else {
-			return specific;
+	private ArtifactResult resolve(Set<MavenProject> visitedProjects, Artifact aetherArtifact) {
+		for (MavenProject p : session.getAllProjects()) {
+			if (!visitedProjects.contains(p)) {
+				try {
+					ArtifactResult resolutionResult = resolveRemoteArtifact(visitedProjects, p, aetherArtifact,
+							p.getRemoteProjectRepositories());
+					if (resolutionResult != null) {
+						return resolutionResult;
+					}
+				} catch (MojoExecutionException mee) {
+					logger.error("An error occurred resolving remote artifacts.", mee);
+				}
+			}
 		}
+		return null;
 	}
 
 	// TODO
@@ -879,39 +924,27 @@ public class FlatpakMojo extends AbstractMojo {
 			org.eclipse.aether.artifact.Artifact aetherArtifact, List<RemoteRepository> repos)
 			throws MojoExecutionException {
 		ArtifactRequest req = new ArtifactRequest().setRepositories(repos).setArtifact(aetherArtifact);
-		ArtifactResult resolutionResult = null;
 		visitedProjects.add(project);
 
 		try {
-			resolutionResult = this.repoSystem.resolveArtifact(this.repoSession, req);
+			return this.repoSystem.resolveArtifact(this.repoSession, req);
 		} catch (ArtifactResolutionException e) {
 			if (project.getParent() == null) {
 				/* Reached the root (reactor), now look in child module repositories too */
-				for (MavenProject p : session.getAllProjects()) {
-					if (!visitedProjects.contains(p)) {
-						try {
-							resolutionResult = resolveRemoteArtifact(visitedProjects, p, aetherArtifact,
-									p.getRemoteProjectRepositories());
-							if (resolutionResult != null) {
-								break;
-							}
-						} catch (MojoExecutionException mee) {
-							LOGGER.error("An error occurred resolving remote artifacts.", mee);
-						}
-					}
-				}
+				return resolve(visitedProjects, aetherArtifact);
 			} else if (!visitedProjects.contains(project.getParent())) {
 				return resolveRemoteArtifact(visitedProjects, project.getParent(), aetherArtifact,
 						project.getParent().getRemoteProjectRepositories());
 			}
 		}
-		return resolutionResult;
+		return null;
 	}
 
 	private void scriptArgs(List<String> vmopts, List<String> classPaths, List<String> modulePaths) {
 		if (splashPath != null) {
-			vmopts.add("-splash:" + manifest.getAppId() + ".splash." + getExtension(splashPath));
+			vmopts.add("-splash:" + "/app/share/pixmaps/" + manifest.getAppId() + "." + getExtension(splashPath));
 		}
+
 		if (!modulePaths.isEmpty()) {
 			vmopts.add("-p");
 			vmopts.add(String.join(File.pathSeparator,
@@ -943,7 +976,7 @@ public class FlatpakMojo extends AbstractMojo {
 				conx.getInputStream().close();
 				return address;
 			} catch (Exception e) {
-				LOGGER.warn(
+				logger.warn(
 						MessageFormat.format("{0} will use local copy as remote failed verification check.", address));
 				return null;
 			}

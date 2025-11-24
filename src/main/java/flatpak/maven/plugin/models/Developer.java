@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package flatpak.maven.plugin.models;
 
@@ -13,7 +13,7 @@ public class Developer {
 
 	/**
 	 * Constructor.
-	 * 
+	 *
 	 * @param id   {@link String}
 	 * @param name {@link String}
 	 */
@@ -31,17 +31,17 @@ public class Developer {
 	}
 
 	/**
-	 * @param id the id to set
-	 */
-	public void setId(String id) {
-		this.id = id;
-	}
-
-	/**
 	 * @return the name
 	 */
 	public String getName() {
 		return name;
+	}
+
+	/**
+	 * @param id the id to set
+	 */
+	public void setId(String id) {
+		this.id = id;
 	}
 
 	/**

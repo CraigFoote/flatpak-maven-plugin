@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package flatpak.maven.plugin.models;
 
@@ -8,7 +8,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlText;
 
 /**
  * Encapsulates an Url `type` and `value`.
- * 
+ *
  * @author Footeware.ca
  */
 public class Url {
@@ -18,7 +18,7 @@ public class Url {
 
 	/**
 	 * Constructor.
-	 * 
+	 *
 	 * @param type  {@link String}
 	 * @param value {@link String}
 	 */
@@ -36,18 +36,18 @@ public class Url {
 	}
 
 	/**
-	 * @param type the type to set
-	 */
-	public void setType(String type) {
-		this.type = type;
-	}
-
-	/**
 	 * @return the value
 	 */
 	@JacksonXmlText
 	public String getValue() {
 		return value;
+	}
+
+	/**
+	 * @param type the type to set
+	 */
+	public void setType(String type) {
+		this.type = type;
 	}
 
 	/**
