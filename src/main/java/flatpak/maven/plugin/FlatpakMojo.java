@@ -64,6 +64,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import flatpak.maven.plugin.exceptions.MetaInfoException;
 import flatpak.maven.plugin.models.Branding;
+import flatpak.maven.plugin.models.ContentRating;
 import flatpak.maven.plugin.models.DesktopEntry;
 import flatpak.maven.plugin.models.Launchable;
 import flatpak.maven.plugin.models.Manifest;
@@ -113,6 +114,9 @@ public class FlatpakMojo extends AbstractMojo {
 
 	@Parameter
 	private Branding branding;
+	
+	@Parameter
+	private ContentRating contentRating;
 
 	/**
 	 * The string for the "categories" property in the generated .desktop file.
@@ -237,15 +241,13 @@ public class FlatpakMojo extends AbstractMojo {
 		this.repoSystem = repoSystem;
 		this.metaInfo = new MetaInfo();
 		this.manifest = new Manifest();
+		this.desktopEntry = new DesktopEntry();
 	}
 
 	private void addDesktopEntry(Module appModule) {
-		if (desktopEntry == null) {
-			desktopEntry = new DesktopEntry();
-		}
 		if (!desktopEntry.isIgnore()) {
 			desktopEntry.setType("Application");
-			desktopEntry.setName(project.getArtifactId());
+			desktopEntry.setName(project.getName());
 			desktopEntry.setComment(project.getDescription());
 			desktopEntry.setExec(manifest.getCommand());
 			desktopEntry.setIcon(manifest.getAppId());
@@ -293,12 +295,6 @@ public class FlatpakMojo extends AbstractMojo {
 	}
 
 //	private void addImageFiles() throws IOException {
-//		for (File f : getImageFiles(new File("src/main/resources/screenshots/"))) {
-//			File imageFile = new File(appDirectory, f.getName());
-//			copy("Copying screenshot to flatpak build folder.", f, imageFile, f.lastModified());
-//			metaInfo.getScreenshots().add(f.getName());
-//		}
-//
 //		for (File f : getImageFiles(thumbnailsDirectory)) {
 //			copy("Copying thumbnail to flatpak build folder.", f, new File(appDirectory, f.getName()),
 //					f.lastModified());
@@ -383,6 +379,10 @@ public class FlatpakMojo extends AbstractMojo {
 
 		if (this.branding != null) {
 			this.metaInfo.setBranding(this.branding);
+		}
+		
+		if (this.contentRating != null) {
+			this.metaInfo.setContentRating(this.contentRating);
 		}
 
 		File metaInfoFile = getMetaInfoFile();

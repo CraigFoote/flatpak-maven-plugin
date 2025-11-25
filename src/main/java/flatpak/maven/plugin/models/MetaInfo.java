@@ -17,6 +17,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 public class MetaInfo {
 
 	private Branding branding;
+	private ContentRating contentRating;
 	private String description;
 	private Developer developer;
 	@JacksonXmlElementWrapper(localName = "icons")
@@ -40,6 +41,11 @@ public class MetaInfo {
 
 	public Branding getBranding() {
 		return branding;
+	}
+
+	@JacksonXmlProperty(localName = "content_rating")
+	public ContentRating getContentRating() {
+		return contentRating;
 	}
 
 	@JsonRawValue
@@ -81,6 +87,7 @@ public class MetaInfo {
 		return packageName;
 	}
 
+	@JacksonXmlProperty(localName = "project_group")
 	public final String getProjectGroup() {
 		return projectGroup;
 	}
@@ -114,6 +121,10 @@ public class MetaInfo {
 
 	public void setBranding(Branding branding) {
 		this.branding = branding;
+	}
+
+	public void setContentRating(ContentRating contentRating) {
+		this.contentRating = contentRating;
 	}
 
 	public final void setDescription(String description) {

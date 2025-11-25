@@ -66,7 +66,7 @@ public class MyAetherMojo extends AbstractMojo {
 		request.setArtifact(artifact);
 		request.setRepositories(remoteRepos);
 
-		getLog().info("Resolving artifact " + artifact + " from " + remoteRepos);
+		getLog().info("Resolving artifact " + artifact + " from " + remoteRepos); // TODO
 
 		ArtifactResult result;
 		try {
@@ -76,6 +76,6 @@ public class MyAetherMojo extends AbstractMojo {
 		}
 
 		getLog().info("Resolved artifact " + artifact + " to " + result.getArtifact().getFile() + " from "
-				+ result.getRepository());
+				+ result.getRepository()); // TODO
 	}
 }
