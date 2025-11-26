@@ -31,6 +31,9 @@ public class MetaInfo {
 	private String packageName;
 	private String projectGroup;
 	private String projectLicense;
+	@JacksonXmlElementWrapper(localName = "releases")
+	@JacksonXmlProperty(localName = "release")
+	private List<Release> releases = new ArrayList<>();
 	@JacksonXmlElementWrapper(localName = "screenshots")
 	@JacksonXmlProperty(localName = "screenshot")
 	private List<Screenshot> screenshots = new ArrayList<>();
@@ -165,6 +168,10 @@ public class MetaInfo {
 
 	public final void setProjectLicense(String projectLicense) {
 		this.projectLicense = projectLicense;
+	}
+
+	public void setReleases(List<Release> releases) {
+		this.releases = releases;
 	}
 
 	public final void setSourcePackage(String sourcePackage) {

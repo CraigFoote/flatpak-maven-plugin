@@ -66,10 +66,12 @@ import flatpak.maven.plugin.exceptions.MetaInfoException;
 import flatpak.maven.plugin.models.Branding;
 import flatpak.maven.plugin.models.ContentRating;
 import flatpak.maven.plugin.models.DesktopEntry;
+import flatpak.maven.plugin.models.Image;
 import flatpak.maven.plugin.models.Launchable;
 import flatpak.maven.plugin.models.Manifest;
 import flatpak.maven.plugin.models.MetaInfo;
 import flatpak.maven.plugin.models.Module;
+import flatpak.maven.plugin.models.Release;
 import flatpak.maven.plugin.models.Screenshot;
 import flatpak.maven.plugin.models.Source;
 import flatpak.maven.plugin.models.Url;
@@ -114,9 +116,6 @@ public class FlatpakMojo extends AbstractMojo {
 
 	@Parameter
 	private Branding branding;
-	
-	@Parameter
-	private ContentRating contentRating;
 
 	/**
 	 * The string for the "categories" property in the generated .desktop file.
@@ -130,6 +129,9 @@ public class FlatpakMojo extends AbstractMojo {
 	 */
 	@Parameter
 	private List<String> classpathArtifacts;
+
+	@Parameter
+	private ContentRating contentRating;
 
 	@Parameter
 	private DesktopEntry desktopEntry;
@@ -180,6 +182,9 @@ public class FlatpakMojo extends AbstractMojo {
 
 	@Parameter(defaultValue = "${project}", required = true, readonly = true)
 	private MavenProject project;
+
+	@Parameter
+	private List<Release> releases;
 
 	@Parameter(defaultValue = "true")
 	private boolean remotesFromOriginalSource;
@@ -360,12 +365,34 @@ public class FlatpakMojo extends AbstractMojo {
 			metaInfo.setLaunchable(new Launchable("desktop-id", manifest.getAppId() + ".desktop"));
 		}
 
+		addScreenshots();
+
+		if (this.branding != null) {
+			this.metaInfo.setBranding(this.branding);
+		}
+
+		if (this.contentRating != null) {
+			this.metaInfo.setContentRating(this.contentRating);
+		}
+
+		if (this.releases != null) {
+			this.metaInfo.setReleases(this.releases);
+		}
+
+		File metaInfoFile = getMetaInfoFile();
+
+		appModule.getBuildCommands().add(formatInstall(metaInfoFile.getName(), "/app/share/appdata"));
+		appModule.getSources().add(new Source(metaInfoFile.getName()));
+	}
+
+	private void addScreenshots() throws MetaInfoException {
 		for (Screenshot screenshot : screenshots) {
 			metaInfo.getScreenshots().add(screenshot);
 			URI uri = URI.create(screenshot.getImage().getValue());
 			File sourceFile;
 			try {
 				sourceFile = fileFromUri(uri);
+				calculateSizes(sourceFile, screenshot.getImage());
 			} catch (IOException e) {
 				throw new MetaInfoException(e.getMessage());
 			}
@@ -376,19 +403,6 @@ public class FlatpakMojo extends AbstractMojo {
 				throw new MetaInfoException(e.getMessage());
 			}
 		}
-
-		if (this.branding != null) {
-			this.metaInfo.setBranding(this.branding);
-		}
-		
-		if (this.contentRating != null) {
-			this.metaInfo.setContentRating(this.contentRating);
-		}
-
-		File metaInfoFile = getMetaInfoFile();
-
-		appModule.getBuildCommands().add(formatInstall(metaInfoFile.getName(), "/app/share/appdata"));
-		appModule.getSources().add(new Source(metaInfoFile.getName()));
 	}
 
 	private void addSdkExtensionModule() {
@@ -435,6 +449,14 @@ public class FlatpakMojo extends AbstractMojo {
 			appModule.getBuildCommands().add(formatInstall(splashFileName, "/app/share/pixmaps"));
 			appModule.getSources().add(new Source(splashFileName));
 		}
+	}
+
+	private void calculateSizes(File file, Image image) throws IOException {
+		BufferedImage bimg = ImageIO.read(file);
+		int width = bimg.getWidth();
+		int height = bimg.getHeight();
+		image.setHeight(height);
+		image.setWidth(width);
 	}
 
 	private boolean containsArtifact(Collection<String> artifactNames, Artifact artifact) {
@@ -516,10 +538,9 @@ public class FlatpakMojo extends AbstractMojo {
 		if (isModule(aetherArtifact)) {
 			modulePaths.add(getFileName(aetherArtifact));
 			return true;
-		} else {
-			classPaths.add(getFileName(aetherArtifact));
-			return false;
 		}
+		classPaths.add(getFileName(aetherArtifact));
+		return false;
 	}
 
 	@Override
@@ -594,7 +615,10 @@ public class FlatpakMojo extends AbstractMojo {
 			Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
 		}
 
-		target.toFile().setLastModified(connection.getLastModified());
+		boolean lastModifiedSet = target.toFile().setLastModified(connection.getLastModified());
+		if (!lastModifiedSet) {
+			throw new IllegalArgumentException("Failed to set 'last-modified' on target file: " + target);
+		}
 		return target.toFile();
 	}
 
@@ -636,9 +660,8 @@ public class FlatpakMojo extends AbstractMojo {
 		if (project.getDevelopers() != null && !project.getDevelopers().isEmpty()) {
 			Developer dev = project.getDevelopers().get(0);
 			return new flatpak.maven.plugin.models.Developer(dev.getId(), dev.getName());
-		} else {
-			throw new MetaInfoException("Developer with id and name is required in pom.");
 		}
+		throw new MetaInfoException("Developer with id and name is required in pom.");
 	}
 
 	private String getExtension(String filename) {
@@ -931,7 +954,8 @@ public class FlatpakMojo extends AbstractMojo {
 			if (project.getParent() == null) {
 				/* Reached the root (reactor), now look in child module repositories too */
 				return resolve(visitedProjects, aetherArtifact);
-			} else if (!visitedProjects.contains(project.getParent())) {
+			}
+			if (!visitedProjects.contains(project.getParent())) {
 				return resolveRemoteArtifact(visitedProjects, project.getParent(), aetherArtifact,
 						project.getParent().getRemoteProjectRepositories());
 			}
@@ -968,17 +992,15 @@ public class FlatpakMojo extends AbstractMojo {
 	private String validateUrl(String address) {
 		if (address == null) {
 			return address;
-		} else {
-			try {
-				URL url = new URI(address).toURL();
-				URLConnection conx = url.openConnection();
-				conx.getInputStream().close();
-				return address;
-			} catch (Exception e) {
-				logger.warn(
-						MessageFormat.format("{0} will use local copy as remote failed verification check.", address));
-				return null;
-			}
+		}
+		try {
+			URL url = new URI(address).toURL();
+			URLConnection conx = url.openConnection();
+			conx.getInputStream().close();
+			return address;
+		} catch (Exception e) {
+			logger.warn(MessageFormat.format("{0} will use local copy as remote failed verification check.", address));
+			return null;
 		}
 	}
 
