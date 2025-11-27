@@ -4,7 +4,6 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -251,6 +250,7 @@ public class FlatpakMojo extends AbstractMojo {
 
 	private void addDesktopEntry(Module appModule) {
 		if (!desktopEntry.isIgnore()) {
+			logger.info("Creating .desktop file...");
 			desktopEntry.setType("Application");
 			desktopEntry.setName(project.getName());
 			desktopEntry.setComment(project.getDescription());
@@ -261,9 +261,10 @@ public class FlatpakMojo extends AbstractMojo {
 				desktopEntry.setStartupWMClass(startupWMClass);
 			}
 			File desktopFile = getDesktopEntryFile();
-
+			// add related entries in manifest
 			appModule.getBuildCommands().add(formatInstall(desktopFile.getName(), "/app/share/applications"));
 			appModule.getSources().add(new Source(desktopFile.getName()));
+			logger.info("Successfully created .desktop file for " + desktopFile.getName());
 		}
 	}
 
@@ -288,7 +289,8 @@ public class FlatpakMojo extends AbstractMojo {
 	}
 
 	private void addIcon(Module appModule) throws IOException {
-		if (iconPath != null) {
+		if (appModule != null && iconPath != null) {
+			logger.info("Handling icon file...");
 			File iconfile = new File(iconPath);
 			String ext = getExtension(iconPath);
 			String appIconFileName = manifest.getAppId() + "." + ext;
@@ -296,9 +298,11 @@ public class FlatpakMojo extends AbstractMojo {
 			appModule.getBuildCommands().add(formatInstall(appIconFileName,
 					"/app/share/icons/hicolor/" + getIconDirForTypeAndSize(iconfile) + "/apps"));
 			appModule.getSources().add(new Source(appIconFileName));
+			logger.info("Icon file complete.");
 		}
 	}
 
+	// TODO thumbnails
 //	private void addImageFiles() throws IOException {
 //		for (File f : getImageFiles(thumbnailsDirectory)) {
 //			copy("Copying thumbnail to flatpak build folder.", f, new File(appDirectory, f.getName()),
@@ -308,14 +312,17 @@ public class FlatpakMojo extends AbstractMojo {
 
 	private void addLauncher(Module appModule, List<String> classPaths, List<String> modulePaths,
 			boolean mainArtifactIsModule) throws IOException {
+		logger.info("Adding launcher...");
 		appModule.getBuildCommands().add(formatInstall(manifest.getCommand(), "/app/bin"));
 		appModule.getSources().add(new Source(manifest.getCommand()));
 		try (OutputStream out = new FileOutputStream(new File(appDirectory, manifest.getCommand()))) {
 			writeLauncher(new OutputStreamWriter(out), classPaths, modulePaths, mainArtifactIsModule);
 		}
+		logger.info("Launcher added.");
 	}
 
 	private void addManifestDefaults() {
+		logger.info("Adding defaults to manifest...");
 		manifest.setAppId(project.getGroupId() + "." + project.getArtifactId());
 		manifest.setRuntime(runtime);
 		manifest.setRuntimeVersion(runtimeVersion);
@@ -328,6 +335,7 @@ public class FlatpakMojo extends AbstractMojo {
 			manifest.getFinishArgs().add("--share=network");
 			manifest.getFinishArgs().add("--filesystem=home");
 		}
+		logger.info("Defaults added to manifest.");
 	}
 
 	private void addMetaInfo(Module appModule) throws MetaInfoException {
@@ -357,8 +365,14 @@ public class FlatpakMojo extends AbstractMojo {
 			metaInfo.setProjectGroup(project.getOrganization().getName());
 		}
 
-		if (metaInfo.getDeveloper() == null) {
-			metaInfo.setDeveloper(getDeveloper());
+		if (metaInfo.getDeveloper() == null && project.getDevelopers() != null && !project.getDevelopers().isEmpty()) {
+			Developer developer = project.getDevelopers().get(0);
+			/*
+			 * We need a custom Developer class to allow marking the id as an attribute.
+			 */
+			flatpak.maven.plugin.models.Developer localDev = new flatpak.maven.plugin.models.Developer(
+					developer.getId(), developer.getName());
+			metaInfo.setDeveloper(localDev);
 		}
 
 		if (metaInfo.getLaunchable() == null) {
@@ -444,8 +458,7 @@ public class FlatpakMojo extends AbstractMojo {
 			File splashfile = new File(splashPath);
 			String ext = getExtension(splashPath);
 			String splashFileName = manifest.getAppId() + "." + ext;
-			copy("Copy splash file to flatpak build directory.", splashfile, new File(appDirectory, splashFileName),
-					splashfile.lastModified());
+			copy("splash file", splashfile, new File(appDirectory, splashFileName), splashfile.lastModified());
 			appModule.getBuildCommands().add(formatInstall(splashFileName, "/app/share/pixmaps"));
 			appModule.getSources().add(new Source(splashFileName));
 		}
@@ -594,7 +607,7 @@ public class FlatpakMojo extends AbstractMojo {
 			}
 
 			File metaInfoFile = getMetaInfoFile();
-			try (Writer out = new FileWriter(metaInfoFile)) {
+			try (PrintWriter out = new PrintWriter(metaInfoFile)) {
 				writeMetaInfo(metaInfo, out);
 			}
 		} catch (IOException | NoSuchAlgorithmException | URISyntaxException | MetaInfoException e) {
@@ -650,20 +663,6 @@ public class FlatpakMojo extends AbstractMojo {
 		return new File(appDirectory, manifest.getAppId() + ".desktop");
 	}
 
-	/**
-	 * Get the project developer id and name.
-	 *
-	 * @return {@link flatpak.maven.plugin.models.Developer}
-	 * @throws MetaInfoException when no developer is found.
-	 */
-	private flatpak.maven.plugin.models.Developer getDeveloper() throws MetaInfoException {
-		if (project.getDevelopers() != null && !project.getDevelopers().isEmpty()) {
-			Developer dev = project.getDevelopers().get(0);
-			return new flatpak.maven.plugin.models.Developer(dev.getId(), dev.getName());
-		}
-		throw new MetaInfoException("Developer with id and name is required in pom.");
-	}
-
 	private String getExtension(String filename) {
 		int idx = filename.lastIndexOf('.');
 		return idx == -1 ? filename : filename.substring(idx + 1).toLowerCase();
@@ -694,6 +693,7 @@ public class FlatpakMojo extends AbstractMojo {
 	}
 
 	private String getIconDirForTypeAndSize(File iconFile) {
+		assert (iconFile != null);
 		String ext = getExtension(iconFile.getName());
 		if (ext.equals("svg")) {
 			return "scalable";
@@ -803,7 +803,7 @@ public class FlatpakMojo extends AbstractMojo {
 
 	private void install(Module appModule, org.apache.maven.artifact.Artifact a, ArtifactResult resolutionResult,
 			File file) throws IOException, NoSuchAlgorithmException {
-		// TODO install schema
+		// TODO install a schema
 		String entryPath = getFileName(a);
 		String message = String.format("Adding %s", a.getFile().getName());
 		logger.info(message);
@@ -847,7 +847,7 @@ public class FlatpakMojo extends AbstractMojo {
 	}
 
 	private boolean isModuleJar(Artifact a) throws IOException {
-		// TODO
+		// TODO use of deprecated API
 		try (JarFile jarFile = new JarFile(a.getFile())) {
 			Enumeration<JarEntry> enumOfJar = jarFile.entries();
 			java.util.jar.Manifest mf = jarFile.getManifest();
@@ -912,8 +912,9 @@ public class FlatpakMojo extends AbstractMojo {
 		return builder.toString();
 	}
 
-	private String mavenUrlForProject(ArtifactResult result, ArtifactRepository repo, MavenProject p) {
-		for (RemoteRepository r : p.getRemoteProjectRepositories()) {
+	private String mavenUrlForProject(ArtifactResult result, ArtifactRepository repo, MavenProject mavenProject) {
+		assert (result != null && repo != null && mavenProject != null);
+		for (RemoteRepository r : mavenProject.getRemoteProjectRepositories()) {
 			if (r.getId().equals(repo.getId())) {
 				String url = r.getUrl();
 				return mavenUrl(url, result.getArtifact().getGroupId(), result.getArtifact().getArtifactId(),
@@ -964,6 +965,7 @@ public class FlatpakMojo extends AbstractMojo {
 	}
 
 	private void scriptArgs(List<String> vmopts, List<String> classPaths, List<String> modulePaths) {
+		assert (vmopts != null && classPaths != null && modulePaths != null);
 		if (splashPath != null) {
 			vmopts.add("-splash:" + "/app/share/pixmaps/" + manifest.getAppId() + "." + getExtension(splashPath));
 		}
@@ -1005,6 +1007,7 @@ public class FlatpakMojo extends AbstractMojo {
 	}
 
 	private void writeDesktopEntry(OutputStream out, DesktopEntry desktopEntry) {
+		assert (out != null && desktopEntry != null);
 		try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(out))) {
 			writer.println("[Desktop Entry]");
 			writer.println("Version=1.0");
@@ -1015,7 +1018,9 @@ public class FlatpakMojo extends AbstractMojo {
 			if (desktopEntry.getComment() != null && !desktopEntry.getComment().isEmpty()) {
 				writer.println(String.format("Comment=%s", desktopEntry.getComment()));
 			}
-			writer.println(String.format("Categories=%s", desktopEntry.getCategories()));
+			if (desktopEntry.getCategories() != null && desktopEntry.getCategories().isEmpty()) {
+				writer.println(String.format("Categories=%s", desktopEntry.getCategories()));
+			}
 			if (desktopEntry.getStartupWMClass() != null && !desktopEntry.getStartupWMClass().isEmpty()) {
 				writer.println(String.format("StartupWMClass=%s", desktopEntry.getStartupWMClass()));
 			}
@@ -1054,9 +1059,16 @@ public class FlatpakMojo extends AbstractMojo {
 		mapper.writeValue(writer, manifest);
 	}
 
-	private void writeMetaInfo(MetaInfo metaInfo, Writer writer) throws IOException {
+	private void writeMetaInfo(MetaInfo metaInfo, PrintWriter writer) throws IOException {
 		XmlMapper mapper = new XmlMapper();
-		new PrintWriter(writer, true).println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
 		mapper.writerWithDefaultPrettyPrinter().writeValue(writer, metaInfo);
+
+		// TODO finish or find a way to config mapper to allow <p>
+//		writer.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+//		writer.println("<component>");
+//		writer.println("\t" + metaInfo.getReleases().getFirst().getDescription());
+//		writer.println("</component>");
+//		writer.flush();
+//		writer.close();
 	}
 }

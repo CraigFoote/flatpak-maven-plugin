@@ -9,7 +9,6 @@ public class Developer {
 
 	private String id;
 	private String name;
-	// TODO email, etc
 
 	/**
 	 * Constructor.

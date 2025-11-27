@@ -19,6 +19,7 @@ public class MetaInfo {
 	private Branding branding;
 	private ContentRating contentRating;
 	private String description;
+	@JacksonXmlProperty(isAttribute = true)
 	private Developer developer;
 	@JacksonXmlElementWrapper(localName = "icons")
 	@JacksonXmlProperty(localName = "icon")
@@ -98,6 +99,10 @@ public class MetaInfo {
 	@JacksonXmlProperty(localName = "project_license")
 	public final String getProjectLicense() {
 		return projectLicense;
+	}
+
+	public List<Release> getReleases() {
+		return releases;
 	}
 
 	@JacksonXmlElementWrapper(useWrapping = true, localName = "screenshots")
