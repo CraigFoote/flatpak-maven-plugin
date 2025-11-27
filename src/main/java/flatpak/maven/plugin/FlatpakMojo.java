@@ -250,7 +250,7 @@ public class FlatpakMojo extends AbstractMojo {
 
 	private void addDesktopEntry(Module appModule) {
 		if (!desktopEntry.isIgnore()) {
-			logger.info("Creating .desktop file...");
+			logger.info("Creating .desktop file");
 			desktopEntry.setType("Application");
 			desktopEntry.setName(project.getName());
 			desktopEntry.setComment(project.getDescription());
@@ -264,7 +264,6 @@ public class FlatpakMojo extends AbstractMojo {
 			// add related entries in manifest
 			appModule.getBuildCommands().add(formatInstall(desktopFile.getName(), "/app/share/applications"));
 			appModule.getSources().add(new Source(desktopFile.getName()));
-			logger.info("Successfully created .desktop file for " + desktopFile.getName());
 		}
 	}
 
@@ -290,7 +289,7 @@ public class FlatpakMojo extends AbstractMojo {
 
 	private void addIcon(Module appModule) throws IOException {
 		if (appModule != null && iconPath != null) {
-			logger.info("Handling icon file...");
+			logger.info("Handling icon file");
 			File iconfile = new File(iconPath);
 			String ext = getExtension(iconPath);
 			String appIconFileName = manifest.getAppId() + "." + ext;
@@ -298,7 +297,6 @@ public class FlatpakMojo extends AbstractMojo {
 			appModule.getBuildCommands().add(formatInstall(appIconFileName,
 					"/app/share/icons/hicolor/" + getIconDirForTypeAndSize(iconfile) + "/apps"));
 			appModule.getSources().add(new Source(appIconFileName));
-			logger.info("Icon file complete.");
 		}
 	}
 
@@ -312,17 +310,16 @@ public class FlatpakMojo extends AbstractMojo {
 
 	private void addLauncher(Module appModule, List<String> classPaths, List<String> modulePaths,
 			boolean mainArtifactIsModule) throws IOException {
-		logger.info("Adding launcher...");
+		logger.info("Adding launcher");
 		appModule.getBuildCommands().add(formatInstall(manifest.getCommand(), "/app/bin"));
 		appModule.getSources().add(new Source(manifest.getCommand()));
 		try (OutputStream out = new FileOutputStream(new File(appDirectory, manifest.getCommand()))) {
 			writeLauncher(new OutputStreamWriter(out), classPaths, modulePaths, mainArtifactIsModule);
 		}
-		logger.info("Launcher added.");
 	}
 
 	private void addManifestDefaults() {
-		logger.info("Adding defaults to manifest...");
+		logger.info("Adding defaults to manifest");
 		manifest.setAppId(project.getGroupId() + "." + project.getArtifactId());
 		manifest.setRuntime(runtime);
 		manifest.setRuntimeVersion(runtimeVersion);
@@ -335,7 +332,6 @@ public class FlatpakMojo extends AbstractMojo {
 			manifest.getFinishArgs().add("--share=network");
 			manifest.getFinishArgs().add("--filesystem=home");
 		}
-		logger.info("Defaults added to manifest.");
 	}
 
 	private void addMetaInfo(Module appModule) throws MetaInfoException {
@@ -732,7 +728,7 @@ public class FlatpakMojo extends AbstractMojo {
 			}
 		}
 		if (metaDataLicenseName == null || metaDataLicenseName.isEmpty()) {
-			logger.info("Required metadata license not specified in pom.xml. Defaulting to 'FSFAP'.");
+			logger.warn("Required metadata license not specified in pom.xml. Defaulting to 'FSFAP'.");
 			metaDataLicenseName = "FSFAP";
 		}
 		return metaDataLicenseName;
