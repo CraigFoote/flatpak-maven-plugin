@@ -1014,7 +1014,7 @@ public class FlatpakMojo extends AbstractMojo {
 			if (desktopEntry.getComment() != null && !desktopEntry.getComment().isEmpty()) {
 				writer.println(String.format("Comment=%s", desktopEntry.getComment()));
 			}
-			if (desktopEntry.getCategories() != null && desktopEntry.getCategories().isEmpty()) {
+			if (desktopEntry.getCategories() != null && !desktopEntry.getCategories().isEmpty()) {
 				writer.println(String.format("Categories=%s", desktopEntry.getCategories()));
 			}
 			if (desktopEntry.getStartupWMClass() != null && !desktopEntry.getStartupWMClass().isEmpty()) {

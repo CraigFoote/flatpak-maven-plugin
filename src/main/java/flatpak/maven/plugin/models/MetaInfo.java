@@ -19,7 +19,6 @@ public class MetaInfo {
 	private Branding branding;
 	private ContentRating contentRating;
 	private String description;
-	@JacksonXmlProperty(isAttribute = true)
 	private Developer developer;
 	@JacksonXmlElementWrapper(localName = "icons")
 	@JacksonXmlProperty(localName = "icon")
@@ -40,6 +39,7 @@ public class MetaInfo {
 	private List<Screenshot> screenshots = new ArrayList<>();
 	private String sourcePackage;
 	private String summary;
+	@JacksonXmlProperty(isAttribute = true)
 	private String type;
 	private Url url;
 
@@ -105,7 +105,6 @@ public class MetaInfo {
 		return releases;
 	}
 
-	@JacksonXmlElementWrapper(useWrapping = true, localName = "screenshots")
 	public List<Screenshot> getScreenshots() {
 		return screenshots;
 	}
@@ -118,7 +117,6 @@ public class MetaInfo {
 		return summary;
 	}
 
-	@JacksonXmlProperty(isAttribute = true)
 	public final String getType() {
 		return type;
 	}

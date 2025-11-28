@@ -1,12 +1,10 @@
 package flatpak.maven.plugin.models;
 
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlText;
 
 public class Release {
 
 	private String date;
-	@JacksonXmlText
 	private String description;
 	private String version;
 
