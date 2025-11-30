@@ -12,7 +12,7 @@
 	<description>Generate Flatpak artifacts for flatpak-builder</description>
 
 	<properties>
-		<maven.release>8</maven.release>
+		<maven.compiler.release>8</maven.compiler.release>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
 
@@ -25,9 +25,16 @@
 
 	<licenses>
 		<license>
-			<name>Apache License Version 2.0</name>
-			<url>http://www.apache.org/licenses/LICENSE-2.0</url>
+			<name>GPL-3.0-or-later</name>
+			<url>https://spdx.org/licenses/GPL-3.0-or-later.html</url>
 			<distribution>repo</distribution>
+			<comments>project</comments>
+		</license>
+		<license>
+			<name>FSFAP</name>
+			<url>https://spdx.org/licenses/FSFAP.html</url>
+			<distribution>repo</distribution>
+			<comments>metadata</comments>
 		</license>
 	</licenses>
 
@@ -35,9 +42,16 @@
 
 	<scm>
 		<url>https://github.com/CraigFoote/flatpak-maven-plugin</url>
-		<connection>scm:git:https://github.com/CraigFoote/flatpak-maven-plugin.git</connection>
-		<developerConnection>scm:git:https://github.com/CraigFoote/flatpak-maven-plugin.git</developerConnection>
+		<connection>
+			scm:git:https://github.com/CraigFoote/flatpak-maven-plugin.git</connection>
+		<developerConnection>
+			scm:git:https://github.com/CraigFoote/flatpak-maven-plugin.git</developerConnection>
 	</scm>
+
+	<issueManagement>
+		<system>Github</system>
+		<url>https://github.com/CraigFoote/flatpak-maven-plugin/issues</url>
+	</issueManagement>
 
 	<developers>
 		<developer>
@@ -46,22 +60,22 @@
 			<email>CraigFoote@gmail.com</email>
 		</developer>
 	</developers>
-	
+
 	<repositories>
 		<repository>
-            <id>central</id>
-            <url>https://repo.maven.apache.org/maven2</url>
-        </repository>
-        <repository>
-            <id>sonatype</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-        </repository>
+			<id>central</id>
+			<url>https://repo.maven.apache.org/maven2</url>
+		</repository>
+		<repository>
+			<id>sonatype</id>
+			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+		</repository>
 	</repositories>
 
 	<dependencies>
@@ -130,7 +144,7 @@
 			<artifactId>javax.inject</artifactId>
 			<version>1</version>
 			<scope>provided</scope>
-	    </dependency>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -145,7 +159,7 @@
 				<directory>src/main/resources</directory>
 			</resource>
 		</resources>
-		
+
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -162,6 +176,18 @@
 			</plugin>
 			
 			<plugin>
+				 <groupId>org.apache.maven.plugins</groupId>
+				 <artifactId>maven-site-plugin</artifactId>
+				 <version>3.21.0</version>
+			</plugin>
+			
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-project-info-reports-plugin</artifactId>
+				<version>3.9.0</version>
+			</plugin>
+
+			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
 				<version>3.12.0</version>
@@ -177,7 +203,7 @@
 					</execution>
 				</executions>
 			</plugin>
-			
+
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-gpg-plugin</artifactId>
@@ -201,7 +227,7 @@
 					</execution>
 				</executions>
 			</plugin>
-			
+
 			<plugin>
 				<groupId>org.sonatype.central</groupId>
 				<artifactId>central-publishing-maven-plugin</artifactId>

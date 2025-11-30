@@ -11,7 +11,6 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.Writer;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
@@ -75,7 +74,7 @@ import flatpak.maven.plugin.models.Screenshot;
 import flatpak.maven.plugin.models.Source;
 import flatpak.maven.plugin.models.Url;
 
-@Mojo(threadSafe = true, name = "generate", defaultPhase = LifecyclePhase.PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, requiresProject = true)
+@Mojo(threadSafe = true, name = "prepare-build", defaultPhase = LifecyclePhase.PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, requiresProject = true)
 public class FlatpakMojo extends AbstractMojo {
 
 	private static final String APP_SHARE = "/app/share";
@@ -138,11 +137,8 @@ public class FlatpakMojo extends AbstractMojo {
 	@Parameter
 	private List<String> excludeArtifacts;
 
-	@Parameter(defaultValue = "${project.build.sourceDirectory}/flatpak", required = true) // TODO
-	private File flatpakDataDirectory;
-
 	@Parameter
-	private String gschema;
+	private String gschemaPath;
 
 	@Parameter
 	private String iconPath;
@@ -212,9 +208,6 @@ public class FlatpakMojo extends AbstractMojo {
 	protected MavenSession session;
 
 	@Parameter
-	private String splashPath; // TODO
-
-	@Parameter
 	private String startupWMClass;
 
 	/**
@@ -267,36 +260,38 @@ public class FlatpakMojo extends AbstractMojo {
 		}
 	}
 
+	private void addDeveloper() {
+		if (metaInfo.getDeveloper() == null && project.getDevelopers() != null && !project.getDevelopers().isEmpty()) {
+			Developer developer = project.getDevelopers().get(0);
+			/*
+			 * We need a custom Developer class to allow marking the id as an attribute.
+			 */
+			flatpak.maven.plugin.models.Developer localDev = new flatpak.maven.plugin.models.Developer(
+					developer.getId(), developer.getName());
+			metaInfo.setDeveloper(localDev);
+		}
+	}
+
 	/**
 	 * Handle Gtk GSetting schema.
 	 *
 	 * @param appModule {@link Module}
-	 * @throws MojoExecutionException if 'gschema' is an invalid uri
+	 * @throws IOException
 	 */
-	private void addGSchema(Module appModule) throws URISyntaxException {
-		if (gschema != null && !gschema.isEmpty()) {
-			String path = ".." + File.separator + ".." + File.separator + new URI(gschema).getPath(); // TODO
-			String fileName = Paths.get(gschema).getFileName().toString();
+	private void addGSchema(Module appModule) throws IOException {
+		if (gschemaPath != null && !gschemaPath.isEmpty()) {
+			logger.info("Adding gschema");
+			Path path = Paths.get(project.getBasedir().toPath().toString(), gschemaPath);
+			URI uri = URI.create("file://" + path.toString());
+			File sourceFile = new File(uri);
+			File destFile = new File(appDirectory, sourceFile.getName());
 
-			String message = String.format("Adding %s", fileName);
-			logger.info(message);
+			copy("GSchema file", sourceFile, destFile, sourceFile.lastModified());
 
-			appModule.getSources().add(new Source(path));
-			appModule.getBuildCommands().add("install -D " + fileName + " /app/share/glib-2.0/schemas/" + fileName);
+			appModule.getSources().add(new Source(sourceFile.getName()));
+			appModule.getBuildCommands()
+					.add("install -D " + path.getFileName() + " /app/share/glib-2.0/schemas/" + destFile.getName());
 			appModule.getBuildCommands().add("glib-compile-schemas /app/share/glib-2.0/schemas");
-		}
-	}
-
-	private void addIcon(Module appModule) throws IOException {
-		if (appModule != null && iconPath != null) {
-			logger.info("Handling icon file");
-			File iconfile = new File(iconPath);
-			String ext = getExtension(iconPath);
-			String appIconFileName = manifest.getAppId() + "." + ext;
-			copy("Icon file", iconfile, new File(appDirectory, appIconFileName), iconfile.lastModified());
-			appModule.getBuildCommands().add(formatInstall(appIconFileName,
-					"/app/share/icons/hicolor/" + getIconDirForTypeAndSize(iconfile) + "/apps"));
-			appModule.getSources().add(new Source(appIconFileName));
 		}
 	}
 
@@ -307,6 +302,19 @@ public class FlatpakMojo extends AbstractMojo {
 //					f.lastModified());
 //		}
 //	}
+
+	private void addIcon(Module appModule) throws IOException {
+		if (iconPath != null) {
+			logger.info("Handling icon file");
+			File iconfile = new File(iconPath);
+			String ext = getExtension(iconPath);
+			String appIconFileName = manifest.getAppId() + "." + ext;
+			copy("Icon file", iconfile, new File(appDirectory, appIconFileName), iconfile.lastModified());
+			appModule.getBuildCommands().add(formatInstall(appIconFileName,
+					"/app/share/icons/hicolor/" + getIconDirForTypeAndSize(iconfile) + "/apps"));
+			appModule.getSources().add(new Source(appIconFileName));
+		}
+	}
 
 	private void addLauncher(Module appModule, List<String> classPaths, List<String> modulePaths,
 			boolean mainArtifactIsModule) throws IOException {
@@ -361,20 +369,11 @@ public class FlatpakMojo extends AbstractMojo {
 			metaInfo.setProjectGroup(project.getOrganization().getName());
 		}
 
-		if (metaInfo.getDeveloper() == null && project.getDevelopers() != null && !project.getDevelopers().isEmpty()) {
-			Developer developer = project.getDevelopers().get(0);
-			/*
-			 * We need a custom Developer class to allow marking the id as an attribute.
-			 */
-			flatpak.maven.plugin.models.Developer localDev = new flatpak.maven.plugin.models.Developer(
-					developer.getId(), developer.getName());
-			metaInfo.setDeveloper(localDev);
-		}
-
 		if (metaInfo.getLaunchable() == null) {
 			metaInfo.setLaunchable(new Launchable("desktop-id", manifest.getAppId() + ".desktop"));
 		}
 
+		addDeveloper();
 		addScreenshots();
 
 		if (this.branding != null) {
@@ -399,16 +398,34 @@ public class FlatpakMojo extends AbstractMojo {
 		for (Screenshot screenshot : screenshots) {
 			metaInfo.getScreenshots().add(screenshot);
 			URI uri = URI.create(screenshot.getImage().getValue());
-			File sourceFile;
+
+			URLConnection connection;
 			try {
-				sourceFile = fileFromUri(uri);
-				calculateSizes(sourceFile, screenshot.getImage());
+				connection = uri.toURL().openConnection();
+			} catch (IOException e) {
+				throw new MetaInfoException(e.getMessage(), e);
+			}
+			connection.setConnectTimeout(5000);
+			connection.setReadTimeout(15000);
+
+			String name = Paths.get(uri.getPath()).getFileName().toString();
+			Path target = appDirectory.toPath().resolve(name);
+
+			try (InputStream in = connection.getInputStream()) {
+				Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
+
+				boolean lastModifiedSet = target.toFile().setLastModified(connection.getLastModified());
+				if (!lastModifiedSet) {
+					throw new IllegalArgumentException("Failed to set 'last-modified' on target file: " + target);
+				}
+
+				calculateSizes(target.toFile(), screenshot.getImage());
 			} catch (IOException e) {
 				throw new MetaInfoException(e.getMessage());
 			}
-			File destFile = new File(appDirectory, sourceFile.getName());
+			File destFile = new File(appDirectory, name);
 			try {
-				copy("Copying screenshot to flatpak build folder.", sourceFile, destFile, sourceFile.lastModified());
+				copy("screenshot", target.toFile(), destFile, target.toFile().lastModified());
 			} catch (IOException e) {
 				throw new MetaInfoException(e.getMessage());
 			}
@@ -441,22 +458,15 @@ public class FlatpakMojo extends AbstractMojo {
 			}
 		}
 		if (!hasJdkExtension) {
-			if (javaSdkExtensionVersion < 12) {
+			if (javaSdkExtensionVersion <= 11) {
 				manifest.getSdkExtensions().add("org.freedesktop.Sdk.Extension.openjdk11");
-			} else {
+			} else if (javaSdkExtensionVersion <= 17) {
 				manifest.getSdkExtensions().add("org.freedesktop.Sdk.Extension.openjdk17");
-			} // TODO 21, 25
-		}
-	}
-
-	private void addSplash(Module appModule) throws IOException {
-		if (splashPath != null && !splashPath.isEmpty()) {
-			File splashfile = new File(splashPath);
-			String ext = getExtension(splashPath);
-			String splashFileName = manifest.getAppId() + "." + ext;
-			copy("splash file", splashfile, new File(appDirectory, splashFileName), splashfile.lastModified());
-			appModule.getBuildCommands().add(formatInstall(splashFileName, "/app/share/pixmaps"));
-			appModule.getSources().add(new Source(splashFileName));
+			} else if (javaSdkExtensionVersion <= 21) {
+				manifest.getSdkExtensions().add("org.freedesktop.Sdk.Extension.openjdk21");
+			} else if (javaSdkExtensionVersion <= 25) {
+				manifest.getSdkExtensions().add("org.freedesktop.Sdk.Extension.openjdk25");
+			}
 		}
 	}
 
@@ -490,7 +500,7 @@ public class FlatpakMojo extends AbstractMojo {
 
 	private void copy(String reason, File p1, File p2, long mod) throws IOException {
 		String message = String.format("Copy %s - %s to %s", reason, p1.getAbsolutePath(), p2.getAbsolutePath());
-		logger.debug(message);
+		logger.info(message);
 		p2.getParentFile().mkdirs();
 		try (OutputStream out = new FileOutputStream(p2)) {
 			Files.copy(p1.toPath(), out);
@@ -534,7 +544,7 @@ public class FlatpakMojo extends AbstractMojo {
 			return false;
 		}
 
-		File file = aetherArtifact.getFile(); // TODO
+		File file = aetherArtifact.getFile();
 		if (!file.exists()) {
 			message = String.format(
 					"Artifact %s has no attached file. Its content will not be copied in the target model directory.",
@@ -574,7 +584,6 @@ public class FlatpakMojo extends AbstractMojo {
 
 		try {
 			addIcon(appModule);
-			addSplash(appModule);
 			addDesktopEntry(appModule);
 			addMetaInfo(appModule);
 			addGSchema(appModule);
@@ -606,29 +615,9 @@ public class FlatpakMojo extends AbstractMojo {
 			try (PrintWriter out = new PrintWriter(metaInfoFile)) {
 				writeMetaInfo(metaInfo, out);
 			}
-		} catch (IOException | NoSuchAlgorithmException | URISyntaxException | MetaInfoException e) {
+		} catch (IOException | NoSuchAlgorithmException | MetaInfoException e) {
 			throw new MojoExecutionException("Failed to write manifest.", e);
 		}
-	}
-
-	private File fileFromUri(URI uri) throws IOException {
-		URL url = uri.toURL();
-		URLConnection connection = url.openConnection();
-		connection.setConnectTimeout(5000);
-		connection.setReadTimeout(15000);
-
-		String name = Paths.get(uri.getPath()).getFileName().toString();
-		Path target = appDirectory.toPath().resolve(name);
-
-		try (InputStream in = connection.getInputStream()) {
-			Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
-		}
-
-		boolean lastModifiedSet = target.toFile().setLastModified(connection.getLastModified());
-		if (!lastModifiedSet) {
-			throw new IllegalArgumentException("Failed to set 'last-modified' on target file: " + target);
-		}
-		return target.toFile();
 	}
 
 	private String firstSentence(String description) {
@@ -665,7 +654,7 @@ public class FlatpakMojo extends AbstractMojo {
 	}
 
 	private String getFileName(Artifact aetherArtifact) {
-		return aetherArtifact.getFile().getName(); // TODO
+		return aetherArtifact.getFile().getName();
 	}
 
 	private String getFileName(org.apache.maven.artifact.Artifact a) {
@@ -799,7 +788,6 @@ public class FlatpakMojo extends AbstractMojo {
 
 	private void install(Module appModule, org.apache.maven.artifact.Artifact a, ArtifactResult resolutionResult,
 			File file) throws IOException, NoSuchAlgorithmException {
-		// TODO install a schema
 		String entryPath = getFileName(a);
 		String message = String.format("Adding %s", a.getFile().getName());
 		logger.info(message);
@@ -812,8 +800,7 @@ public class FlatpakMojo extends AbstractMojo {
 				entry.setSha256(getFileChecksum(MessageDigest.getInstance("SHA-256"), a.getFile()));
 				appModule.getBuildCommands().add(formatInstall(getBasePath(remoteUrl), entryPath, APP_SHARE));
 			} else {
-				copy("Copy jar from Maven to flatpak build directory.", file, new File(appDirectory, entryPath),
-						file.lastModified());
+				copy("jar", file, new File(appDirectory, entryPath), file.lastModified());
 				entry.setType("file");
 				entry.setPath(entryPath);
 				appModule.getBuildCommands().add(formatInstall(entryPath, APP_SHARE));
@@ -843,7 +830,6 @@ public class FlatpakMojo extends AbstractMojo {
 	}
 
 	private boolean isModuleJar(Artifact a) throws IOException {
-		// TODO use of deprecated API
 		try (JarFile jarFile = new JarFile(a.getFile())) {
 			Enumeration<JarEntry> enumOfJar = jarFile.entries();
 			java.util.jar.Manifest mf = jarFile.getManifest();
@@ -938,7 +924,6 @@ public class FlatpakMojo extends AbstractMojo {
 		return null;
 	}
 
-	// TODO
 	private ArtifactResult resolveRemoteArtifact(Set<MavenProject> visitedProjects, MavenProject project,
 			org.eclipse.aether.artifact.Artifact aetherArtifact, List<RemoteRepository> repos)
 			throws MojoExecutionException {
@@ -962,10 +947,6 @@ public class FlatpakMojo extends AbstractMojo {
 
 	private void scriptArgs(List<String> vmopts, List<String> classPaths, List<String> modulePaths) {
 		assert (vmopts != null && classPaths != null && modulePaths != null);
-		if (splashPath != null) {
-			vmopts.add("-splash:" + "/app/share/pixmaps/" + manifest.getAppId() + "." + getExtension(splashPath));
-		}
-
 		if (!modulePaths.isEmpty()) {
 			vmopts.add("-p");
 			vmopts.add(String.join(File.pathSeparator,
