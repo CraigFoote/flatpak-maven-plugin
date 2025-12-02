@@ -20,13 +20,13 @@ This plugin has not yet been released to Maven Central. In the meantime it can b
 
 ```xml
 <pluginRepositories>
-	<pluginRepository>
-		<id>central-snapshots</id>
-		<url>https://central.sonatype.com/repository/maven-snapshots/</url>
-		<snapshots>
-			<enabled>true</enabled>
-		</snapshots>
-	</pluginRepository>
+    <pluginRepository>
+        <id>central-snapshots</id>
+        <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+        <snapshots>
+            <enabled>true</enabled>
+        </snapshots>
+    </pluginRepository>
 </pluginRepositories>
 ```
 
@@ -34,17 +34,17 @@ And in your `<build>` section:
 
 ```xml
 <plugin>
-	<groupId>ca.footeware</groupId>
-	<artifactId>flatpak-maven-plugin</artifactId>
-	<version>1.0.5-SNAPSHOT</version>
-	<executions>
-		<execution>
-	    	<id>prepare</id>
-			<phase>package</phase>
-			<goals>
-				<goal>prepare-build</goal>
-			</goals>
-		    <configuration>
+    <groupId>ca.footeware</groupId>
+    <artifactId>flatpak-maven-plugin</artifactId>
+    <version>1.0.5-SNAPSHOT</version>
+    <executions>
+        <execution>
+            <id>prepare</id>
+            <phase>package</phase>
+            <goals>
+                <goal>prepare-build</goal>
+            </goals>
+            <configuration>
                 <!-- required parameters, see below -->
             </configuration>
         </execution>
@@ -58,264 +58,267 @@ A lot of the required parameters are taken from the stock pom properties. The re
 
 ```xml
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
-	<groupId>ca.footeware.javagi</groupId>
-	<artifactId>journal</artifactId>
-	<version>1.0.0-SNAPSHOT</version>
+    <groupId>ca.footeware.javagi</groupId>
+    <artifactId>journal</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
 
-	<properties>
-		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<maven.compiler.source>25</maven.compiler.source>
-		<maven.compiler.target>25</maven.compiler.target>
-	</properties>
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>25</maven.compiler.source>
+        <maven.compiler.target>25</maven.compiler.target>
+    </properties>
 
-	<dependencies>
+    <dependencies>
         <!--Java on Gtk4/Adw-->
-		<dependency>
-			<groupId>org.java-gi</groupId>
-			<artifactId>adw</artifactId>
-			<version>0.13.0</version>
-		</dependency>
-	</dependencies>
+        <dependency>
+            <groupId>org.java-gi</groupId>
+            <artifactId>adw</artifactId>
+            <version>0.13.0</version>
+        </dependency>
+    </dependencies>
 
-	<build>
-		<resources>
-			<resource>
-				<directory>src/main/resources/</directory>
-			</resource>
-			<resource>
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources/</directory>
+            </resource>
+            <resource>
                 <!--project.properties needs string injection or filtering-->
-				<directory>src/main/resources/filtered</directory>
-				<includes>
-					<include>project.properties</include>
-				</includes>
-				<filtering>true</filtering>
-			</resource>
-		</resources>
+                <directory>src/main/resources/filtered</directory>
+                <includes>
+                    <include>project.properties</include>
+                </includes>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
 
-		<plugins>
+        <plugins>
             <!--project.properties above needs to be handled in UTF-8-->
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-resources-plugin</artifactId>
-				<version>3.3.1</version>
-				<configuration>
-					<propertiesEncoding>UTF-8</propertiesEncoding>
-				</configuration>
-			</plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.3.1</version>
+                <configuration>
+                    <propertiesEncoding>UTF-8</propertiesEncoding>
+                </configuration>
+            </plugin>
 
             <!--The initialize phase is early, before package. Here we are compiling a gresource file-->
-			<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>exec-maven-plugin</artifactId>
-				<version>3.6.2</version>
-				<executions>
-					<execution>
-						<id>gresource-compiling</id>
-						<phase>initialize</phase>
-						<goals>
-							<goal>exec</goal>
-						</goals>
-					</execution>
-				</executions>
-				<configuration>
-					<executable>/usr/bin/glib-compile-resources</executable>
-					<workingDirectory>${project.basedir}/src/main/resources/</workingDirectory>
-					<commandlineArgs>${project.basedir}/src/main/resources/journal.gresource.xml</commandlineArgs>
-				</configuration>
-			</plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.6.2</version>
+                <executions>
+                    <execution>
+                        <id>gresource-compiling</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <executable>/usr/bin/glib-compile-resources</executable>
+                    <workingDirectory>${project.basedir}/src/main/resources/</workingDirectory>
+                    <commandlineArgs>${project.basedir}/src/main/resources/journal.gresource.xml</commandlineArgs>
+                </configuration>
+            </plugin>
 
-			<plugin>
-				<groupId>ca.footeware</groupId>
-				<artifactId>flatpak-maven-plugin</artifactId>
-				<version>1.0.5-SNAPSHOT</version>
-				<executions>
-					<execution>
-						<id>prepare</id>
-						<phase>package</phase>
-						<goals>
-							<goal>prepare-build</goal>
-						</goals>
-						<configuration>
-							<mainClass>ca.footeware.javagi.journal.JournalApplication</mainClass>
-							<usingModules>false</usingModules>
-							<runtime>org.gnome.Platform</runtime>
-							<sdk>org.gnome.Sdk</sdk>
-							<runtimeVersion>49</runtimeVersion>
-							<categories>Office;Calendar</categories>
-							<iconPath>src/main/resources/journal.svg</iconPath>
-							<gschemaPath>src/main/resources/ca.footeware.javagi.journal.gschema.xml</gschemaPath>
-							<startupWMClass>ca.footeware.javagi.journal</startupWMClass>
-							<screenshots>
-								<screenshot>
-									<image>
-										<type>source</type>
-										<!--must be absolute URL-->
-										<value>https://raw.githubusercontent.com/CraigFoote/ca.footeware.javagi.journal/refs/heads/master/src/main/resources/screenshots/screenshot1.png</value>
-									</image>
-									<caption>Journal initial page</caption>
-									<type>default</type> <!--only one of type default-->
-								</screenshot>
-								<screenshot>
-									<image>
-										<type>source</type>
-										<value>https://raw.githubusercontent.com/CraigFoote/ca.footeware.javagi.journal/refs/heads/master/src/main/resources/screenshots/screenshot2.png</value>
-									</image>
-									<caption>Create a new journal page</caption>
-								</screenshot>
-								<screenshot>
-									<image>
-										<type>source</type>
-										<value>https://raw.githubusercontent.com/CraigFoote/ca.footeware.javagi.journal/refs/heads/master/src/main/resources/screenshots/screenshot3.png</value>
-									</image>
-									<caption>Open a journal page</caption>
-								</screenshot>
-								<screenshot>
-									<image>
-										<type>source</type>
-										<value>https://raw.githubusercontent.com/CraigFoote/ca.footeware.javagi.journal/refs/heads/master/src/main/resources/screenshots/screenshot4.png</value>
-									</image>
-									<caption>Journal editor page</caption>
-								</screenshot>
-							</screenshots>
-							<branding>
-								<colors>
-									<color>
-										<type>primary</type>
-										<schemePreference>light</schemePreference>
-										<value>#d8dee9</value>
-									</color>
-									<color>
-										<type>primary</type>
-										<schemePreference>dark</schemePreference>
-										<value>#4c566a</value>
-									</color>
-								</colors>
-							</branding>
-							<!--https://hughsie.github.io/oars/generate.html-->
-							<contentRating>
-								<type>oars-1.1</type>
-							</contentRating>
-							<vmArgs>
-								<vmArg>--enable-native-access=ALL-UNNAMED</vmArg>
-							</vmArgs>
-							<releases>
-								<release>
-									<version>1.0.0</version>
-									<date>2025-12-01</date>
+            <plugin>
+                <groupId>ca.footeware</groupId>
+                <artifactId>flatpak-maven-plugin</artifactId>
+                <version>1.0.5-SNAPSHOT</version>
+                <executions>
+                    <execution>
+                        <id>prepare</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>prepare-build</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>ca.footeware.javagi.journal.JournalApplication</mainClass>
+                            <usingModules>false</usingModules>
+                            <runtime>org.gnome.Platform</runtime>
+                            <sdk>org.gnome.Sdk</sdk>
+                            <runtimeVersion>49</runtimeVersion>
+                            <categories>Office;Calendar</categories>
+                            <iconPath>src/main/resources/journal.svg</iconPath>
+                            <gschemaPath>src/main/resources/ca.footeware.javagi.journal.gschema.xml</gschemaPath>
+                            <startupWMClass>ca.footeware.javagi.journal</startupWMClass>
+                            <screenshots>
+                                <screenshot>
+                                    <image>
+                                        <type>source</type>
+                                        <!--must be absolute URL-->
+                                        <value>https://raw.githubusercontent.com/CraigFoote/ca.footeware.javagi.journal/refs/heads/master/src/main/resources/screenshots/screenshot1.png</value>
+                                    </image>
+                                    <caption>Journal initial page</caption>
+                                    <type>default</type> <!--only one of type default-->
+                                </screenshot>
+                                <screenshot>
+                                    <image>
+                                        <type>source</type>
+                                        <value>https://raw.githubusercontent.com/CraigFoote/ca.footeware.javagi.journal/refs/heads/master/src/main/resources/screenshots/screenshot2.png</value>
+                                    </image>
+                                    <caption>Create a new journal page</caption>
+                                </screenshot>
+                                <screenshot>
+                                    <image>
+                                        <type>source</type>
+                                        <value>https://raw.githubusercontent.com/CraigFoote/ca.footeware.javagi.journal/refs/heads/master/src/main/resources/screenshots/screenshot3.png</value>
+                                    </image>
+                                    <caption>Open a journal page</caption>
+                                </screenshot>
+                                <screenshot>
+                                    <image>
+                                        <type>source</type>
+                                        <value>https://raw.githubusercontent.com/CraigFoote/ca.footeware.javagi.journal/refs/heads/master/src/main/resources/screenshots/screenshot4.png</value>
+                                    </image>
+                                    <caption>Journal editor page</caption>
+                                </screenshot>
+                            </screenshots>
+                            <branding>
+                                <colors>
+                                    <color>
+                                        <type>primary</type>
+                                        <schemePreference>light</schemePreference>
+                                        <value>#d8dee9</value>
+                                    </color>
+                                    <color>
+                                        <type>primary</type>
+                                        <schemePreference>dark</schemePreference>
+                                        <value>#4c566a</value>
+                                    </color>
+                                </colors>
+                            </branding>
+                            <!--https://hughsie.github.io/oars/generate.html-->
+                            <contentRating>
+                                <type>oars-1.1</type>
+                            </contentRating>
+                            <vmArgs>
+                                <vmArg>--enable-native-access=ALL-UNNAMED</vmArg>
+                            </vmArgs>
+                            <releases>
+                                <release>
+                                    <version>1.0.0</version>
+                                    <date>2025-12-01</date>
                                     <!--descriptions must contain <p>, <ul> and <li> tags in CDATA block.-->
-									<!--see https://www.freedesktop.org/software/appstream/docs/chap-Metadata.html#tag-description-->
-									<description><![CDATA[
-									<p>Initial release</p>
-									<ul>
-										<li>Feature complete</li>
-									</ul>
-									]]></description>
-								</release>
-							</releases>
-							<manifest>
-								<appId>ca.footeware.javagi.journal</appId>
-								<sdkExtensions>
-									<sdkExtension>org.freedesktop.Sdk.Extension.openjdk25</sdkExtension>
-								</sdkExtensions>
-								<finishArgs>
-									<finishArg>--socket=session-bus</finishArg>
-									<finishArg>--socket=wayland</finishArg>
-									<finishArg>--socket=ssh-auth</finishArg>
-									<finishArg>--device=dri</finishArg>
-									<finishArg>--share=network</finishArg>
-									<finishArg>--share=ipc</finishArg>
-									<finishArg>--filesystem=home</finishArg>
-									<finishArg>--env=PATH=/app/jre/bin:/app/bin:/usr/bin</finishArg>
-									<finishArg>--env=JAVA_HOME=/app/jre</finishArg>
-								</finishArgs>
-							</manifest>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-		</plugins>
-	</build>
+                                    <!--see https://www.freedesktop.org/software/appstream/docs/chap-Metadata.html#tag-description-->
+                                    <description><![CDATA[
+                                    <p>Initial release</p>
+                                    <ul>
+                                        <li>Feature complete</li>
+                                    </ul>
+                                    ]]></description>
+                                </release>
+                            </releases>
+                            <manifest>
+                                <appId>ca.footeware.javagi.journal</appId>
+                                <sdkExtensions>
+                                    <sdkExtension>org.freedesktop.Sdk.Extension.openjdk25</sdkExtension>
+                                </sdkExtensions>
+                                <finishArgs>
+                                    <finishArg>--socket=session-bus</finishArg>
+                                    <finishArg>--socket=wayland</finishArg>
+                                    <finishArg>--socket=ssh-auth</finishArg>
+                                    <finishArg>--device=dri</finishArg>
+                                    <finishArg>--share=network</finishArg>
+                                    <finishArg>--share=ipc</finishArg>
+                                    <finishArg>--filesystem=home</finishArg>
+                                    <finishArg>--env=PATH=/app/jre/bin:/app/bin:/usr/bin</finishArg>
+                                    <finishArg>--env=JAVA_HOME=/app/jre</finishArg>
+                                </finishArgs>
+                            </manifest>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 
-	<name>Journal</name>
+    <name>Journal</name>
 
-	<description>An encrypted daily journal. Password-encrypted and navigable via a built-in calendar. It uses a local text file in properties format where the keys are dates and the values are encrypted.</description>
+    <description>An encrypted daily journal. Password-encrypted and navigable via a built-in calendar. It uses a local text file in properties format where the keys are dates and the values are encrypted.</description>
 
-	<url>https://github.com/CraigFoote/ca.footeware.javagi.journal</url>
+    <url>https://github.com/CraigFoote/ca.footeware.javagi.journal</url>
 
-	<inceptionYear>2025</inceptionYear>
+    <inceptionYear>2025</inceptionYear>
 
-	<organization>
-		<name>Footeware.ca</name>
-		<url>https://footeware.ca</url>
-	</organization>
+    <organization>
+        <name>Footeware.ca</name>
+        <url>https://footeware.ca</url>
+    </organization>
 
-	<scm>
-		<url>https://github.com/CraigFoote/ca.footeware.javagi.journal</url>
-		<connection>
-			scm:git:https://github.com/CraigFoote/ca.footeware.javagi.journal.git</connection>
-		<developerConnection>
-			scm:git:https://github.com/CraigFoote/ca.footeware.javagi.journal.git</developerConnection>
-	</scm>
-	
-	<issueManagement>
-		<url>https://github.com/CraigFoote/ca.footeware.javagi.journal/issues</url>
-		<system>Github</system>
-	</issueManagement>
-	
-	<!--necessary until flatpak-maven-plugin is released-->
-	<pluginRepositories>
-		<pluginRepository>
-			<id>central-snapshots</id>
-			<url>https://central.sonatype.com/repository/maven-snapshots/</url>
-			<snapshots>
-				<enabled>true</enabled>
-			</snapshots>
-		</pluginRepository>
-	</pluginRepositories>
+    <scm>
+        <url>https://github.com/CraigFoote/ca.footeware.javagi.journal</url>
+        <connection>
+            scm:git:https://github.com/CraigFoote/ca.footeware.javagi.journal.git</connection>
+        <developerConnection>
+            scm:git:https://github.com/CraigFoote/ca.footeware.javagi.journal.git</developerConnection>
+    </scm>
+
+    <issueManagement>
+        <url>https://github.com/CraigFoote/ca.footeware.javagi.journal/issues</url>
+        <system>Github</system>
+    </issueManagement>
+
+    <!--necessary until flatpak-maven-plugin is released-->
+    <pluginRepositories>
+        <pluginRepository>
+            <id>central-snapshots</id>
+            <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </pluginRepository>
+    </pluginRepositories>
 
     <!--must be included for flatpak plugin -->
-	<!--See https://spdx.org/licenses/-->
-	<licenses>
-		<license>
-			<name>GPL-3.0-or-later</name>
-			<url>https://spdx.org/licenses/GPL-3.0-or-later.html</url>
-			<distribution>repo</distribution>
-			<comments>project</comments>
-		</license>
-		<!--defaults to FSFAP if omitted -->
-		<license>
-			<name>FSFAP</name>
-			<url>https://spdx.org/licenses/FSFAP.html</url>
-			<distribution>repo</distribution>
-			<comments>metadata</comments>
-		</license>
-	</licenses>
+    <!--See https://spdx.org/licenses/-->
+    <licenses>
+        <license>
+            <name>GPL-3.0-or-later</name>
+            <url>https://spdx.org/licenses/GPL-3.0-or-later.html</url>
+            <distribution>repo</distribution>
+            <comments>project</comments>
+        </license>
+        <!--defaults to FSFAP if omitted -->
+        <license>
+            <name>FSFAP</name>
+            <url>https://spdx.org/licenses/FSFAP.html</url>
+            <distribution>repo</distribution>
+            <comments>metadata</comments>
+        </license>
+    </licenses>
 
-	<!--must be included for flatpak plugin -->
-	<developers>
-		<developer>
-			<!--must be reverse DNS notation-->
-			<id>ca.footeware.craigfoote</id> <!--required-->
-			<name>Craig Foote</name> <!--required-->
-			<email>CraigFoote@gmail.com</email> <!--optional-->
-			<url>https://github.com/CraigFoote</url> <!--optional-->
-			<organization>Footeware</organization> <!--optional-->
-			<organizationUrl>https://footeware.ca</organizationUrl> <!--optional-->
-			<roles><!--optional-->
-				<role>developer</role>
-			</roles>
-			<timezone>America/Toronto</timezone> <!--optional-->
-		</developer>
-	</developers>
+    <!--must be included for flatpak plugin -->
+    <developers>
+        <developer>
+            <!--must be reverse DNS notation-->
+            <id>ca.footeware.craigfoote</id> <!--required-->
+            <name>Craig Foote</name> <!--required-->
+            <email>CraigFoote@gmail.com</email> <!--optional-->
+            <url>https://github.com/CraigFoote</url> <!--optional-->
+            <organization>Footeware</organization> <!--optional-->
+            <organizationUrl>https://footeware.ca</organizationUrl> <!--optional-->
+            <roles><!--optional-->
+                <role>developer</role>
+            </roles>
+            <timezone>America/Toronto</timezone> <!--optional-->
+        </developer>
+    </developers>
 </project>
 ```
 
 ## TODO
 
 * Create a separate goal to call `flatpak-builder` to build repository.
-* Create a separate goal to call `flatpak-builder` to build .flatpak file,
-* Release the plugin to maven central.
+* Create a separate goal to call `flatpak` to build .flatpak file,
+* Site development.
+* Investigate and release the plugin to maven central.
+
+---
