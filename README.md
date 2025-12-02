@@ -12,7 +12,7 @@ See my [Journal](https://github.com/CraigFoote/ca.footeware.javagi.journal) proj
 
 A single goal is currently provided. 
 
-* `prepare-build`. Generate Flatpak artifacts required for `flatpak-builder`.
+* `prepare-build` - Generate Flatpak artifacts required for `flatpak-builder`.
 
 ## Add Plugin To Your POM
 
