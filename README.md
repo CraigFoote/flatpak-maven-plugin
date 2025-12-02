@@ -2,205 +2,320 @@
 
 A fork of [maven-flatpak-plugin](https://github.com/bithatch/maven-flatpak-plugin) by Brett Smith.
 
-I've updated the `pom.xml` dependencies.  
-I've added configuration tags for `category`, `runtime`, `runtimeVersion`, `sdk` and `gschema` for GSettings.  
-I've also renamed it *flatpak-maven-plugin* in accordance with [maven guidelines](https://maven.apache.org/guides/plugin/guide-java-plugin-development.html#Important_Notice).  
+This plugin builds flatpak artifacts from a Java project. These artifacts can be passed to the `flatpak-builder` application to create a flatpak repository and a .flatpak application which can be installed via GNOME Software.
 
-See my [texty3](https://github.com/CraigFoote/ca.footeware.java.texty3) project for example usage.
+It depends on several standard pom properties and the rest provided in a plugin configuration.
 
-Original README follows and needs to be reconciled:
-
----
-
-Generate a Flatpak manifest and other required files from a Maven POM to create a distributable application. It will turn your Java application into a Flatpak package, which can easily be installed and launched by Linux users of any distribution that supports Flatpak.
-
- * Generates a directory of files from which `flatpak-builder` can be run to build a package.
- * Either copies dependencies, or links to their original locations on Maven Central (in which case the package build downloads them). This makes for a small packages.
- * Generates the Flatpak manfiest using a the simple build system.
- * Generates AppStream metadata from POM metadata and plugin configuration.
- * Generates Desktop Entry from POM metadata and plugin configuration.
- * Copies icons, screenshots and thumbnails to package data.
- * Generates launcher script.
- * Detects version and adds Java Flatpak SDK extension.
- 
-It is *not* a Flatpak Build System, although this may be a first step towards that.
+See my [Journal](https://github.com/CraigFoote/ca.footeware.javagi.journal) project's pom.xml for full example usage (also listed below).
 
 ## Maven Goals
 
 A single goal is currently provided. 
 
- * `generate`. Generates Flatpak Manifest and other data.
+* `prepare-build`. Generate Flatpak artifacts required for `flatpak-builder`.
 
-## Getting Started.
+## Add Plugin To Your POM
 
-### Add Plugin To Your POM
-
-This plugin will be in Maven Central shortly. In the meantime it can be found in OSS Snapshots repository. Add the following to your `<repositories>`.
+This plugin has not yet been released to Maven Central. In the meantime it can be found in the snapshots repository. Add the following to your root of your `pom.xml`:
 
 ```xml
-<repository>
-    <id>oss-snapshots</id>
-    <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-    <snapshots />
-    <releases>
-        <enabled>false</enabled>
-    </releases>
-</repository>
+<pluginRepositories>
+	<pluginRepository>
+		<id>central-snapshots</id>
+		<url>https://central.sonatype.com/repository/maven-snapshots/</url>
+		<snapshots>
+			<enabled>true</enabled>
+		</snapshots>
+	</pluginRepository>
+</pluginRepositories>
 ```
 
-And in your `<plugins>` section.
+And in your `<build>` section:
 
 ```xml
 <plugin>
-	<groupId>uk.co.bithatch</groupId>
-	<artifactId>maven-flatpak-plugin</artifactId>
-	<version>0.0.1</version>
-	<configuration>
-		<!-- TODO add configuration -->
-	</configuration>
+	<groupId>ca.footeware</groupId>
+	<artifactId>flatpak-maven-plugin</artifactId>
+	<version>1.0.5-SNAPSHOT</version>
+	<executions>
+		<execution>
+	    	<id>prepare</id>
+			<phase>package</phase>
+			<goals>
+				<goal>prepare-build</goal>
+			</goals>
+		    <configuration>
+                <!-- required parameters, see below -->
+            </configuration>
+        </execution>
+    </configuration>
 </plugin>
 ```
 
-### Configure Your POM
-
-The plugin takes as much information as it can from *other* standard POM elements, so it is important that you fill in as many of these as possible. This includes ..
-
- * `<artifactId>` and `<groupId>`. A POM requires these anyway, they are used to derive the full namespace of the App Id. 
- * `<name/>`.  Required, used for application meta-data and desktop entry.
- * `<description/>`.  Required, used for application meta-data and desktop entry.
- * `<url/>`. Required. Used for application meta-data.
- * `<licenses/>`. Required. Used for application meta-data.
- * `<scm/>`. Optional. Used for application meta-data.
- * `<issueManagement/>`. Optional. Used for application meta-data.
- * `<developers/>`. Optional. Used for application meta-data.
- 
-### Add Resources
-
-The plugin expects resources to exist in a standard location (the locations of which can be overridden by configuration).
-
- * `src/flatpak/icons` should contain a single file, preferably named `icon` with any supported image extension (`.svg` is recommended).
- * `src/flatpak/screenshots` should contain a single file, preferable named `screenshot`  with any supported image extension (`.jpg` is recommended).
- * `src/flatpak/thumbnails` should contain at least one file, preferable named `thumbnail`  with any supported image extension (`.jpg` is recommended).
- 
 ### Configure The Plugin
 
-For anything else that cannot be determined in any other way, you must provide plugin configuration. The bare minimum for this is the `<mainClass/>`.
+A lot of the required parameters are taken from the stock pom properties. The rest are provided explictly in the plugin's `configuration` block. For example the pom.xml of the Journal application mentioned above:
 
 ```xml
-<configuration>
-	<mainClass>com.acme.Abc</mainClass>
-</configuration>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>ca.footeware.javagi</groupId>
+	<artifactId>journal</artifactId>
+	<version>1.0.0-SNAPSHOT</version>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<maven.compiler.source>25</maven.compiler.source>
+		<maven.compiler.target>25</maven.compiler.target>
+	</properties>
+
+	<dependencies>
+        <!--Java on Gtk4/Adw-->
+		<dependency>
+			<groupId>org.java-gi</groupId>
+			<artifactId>adw</artifactId>
+			<version>0.13.0</version>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<resources>
+			<resource>
+				<directory>src/main/resources/</directory>
+			</resource>
+			<resource>
+                <!--project.properties needs string injection or filtering-->
+				<directory>src/main/resources/filtered</directory>
+				<includes>
+					<include>project.properties</include>
+				</includes>
+				<filtering>true</filtering>
+			</resource>
+		</resources>
+
+		<plugins>
+            <!--project.properties above needs to be handled in UTF-8-->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>3.3.1</version>
+				<configuration>
+					<propertiesEncoding>UTF-8</propertiesEncoding>
+				</configuration>
+			</plugin>
+
+            <!--The initialize phase is early, before package. Here we are compiling a gresource file-->
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<version>3.6.2</version>
+				<executions>
+					<execution>
+						<id>gresource-compiling</id>
+						<phase>initialize</phase>
+						<goals>
+							<goal>exec</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<executable>/usr/bin/glib-compile-resources</executable>
+					<workingDirectory>${project.basedir}/src/main/resources/</workingDirectory>
+					<commandlineArgs>${project.basedir}/src/main/resources/journal.gresource.xml</commandlineArgs>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>ca.footeware</groupId>
+				<artifactId>flatpak-maven-plugin</artifactId>
+				<version>1.0.5-SNAPSHOT</version>
+				<executions>
+					<execution>
+						<id>prepare</id>
+						<phase>package</phase>
+						<goals>
+							<goal>prepare-build</goal>
+						</goals>
+						<configuration>
+							<mainClass>ca.footeware.javagi.journal.JournalApplication</mainClass>
+							<usingModules>false</usingModules>
+							<runtime>org.gnome.Platform</runtime>
+							<sdk>org.gnome.Sdk</sdk>
+							<runtimeVersion>49</runtimeVersion>
+							<categories>Office;Calendar</categories>
+							<iconPath>src/main/resources/journal.svg</iconPath>
+							<gschemaPath>src/main/resources/ca.footeware.javagi.journal.gschema.xml</gschemaPath>
+							<startupWMClass>ca.footeware.javagi.journal</startupWMClass>
+							<screenshots>
+								<screenshot>
+									<image>
+										<type>source</type>
+										<!--must be absolute URL-->
+										<value>https://raw.githubusercontent.com/CraigFoote/ca.footeware.javagi.journal/refs/heads/master/src/main/resources/screenshots/screenshot1.png</value>
+									</image>
+									<caption>Journal initial page</caption>
+									<type>default</type> <!--only one of type default-->
+								</screenshot>
+								<screenshot>
+									<image>
+										<type>source</type>
+										<value>https://raw.githubusercontent.com/CraigFoote/ca.footeware.javagi.journal/refs/heads/master/src/main/resources/screenshots/screenshot2.png</value>
+									</image>
+									<caption>Create a new journal page</caption>
+								</screenshot>
+								<screenshot>
+									<image>
+										<type>source</type>
+										<value>https://raw.githubusercontent.com/CraigFoote/ca.footeware.javagi.journal/refs/heads/master/src/main/resources/screenshots/screenshot3.png</value>
+									</image>
+									<caption>Open a journal page</caption>
+								</screenshot>
+								<screenshot>
+									<image>
+										<type>source</type>
+										<value>https://raw.githubusercontent.com/CraigFoote/ca.footeware.javagi.journal/refs/heads/master/src/main/resources/screenshots/screenshot4.png</value>
+									</image>
+									<caption>Journal editor page</caption>
+								</screenshot>
+							</screenshots>
+							<branding>
+								<colors>
+									<color>
+										<type>primary</type>
+										<schemePreference>light</schemePreference>
+										<value>#d8dee9</value>
+									</color>
+									<color>
+										<type>primary</type>
+										<schemePreference>dark</schemePreference>
+										<value>#4c566a</value>
+									</color>
+								</colors>
+							</branding>
+							<!--https://hughsie.github.io/oars/generate.html-->
+							<contentRating>
+								<type>oars-1.1</type>
+							</contentRating>
+							<vmArgs>
+								<vmArg>--enable-native-access=ALL-UNNAMED</vmArg>
+							</vmArgs>
+							<releases>
+								<release>
+									<version>1.0.0</version>
+									<date>2025-12-01</date>
+                                    <!--descriptions must contain <p>, <ul> and <li> tags in CDATA block.-->
+									<!--see https://www.freedesktop.org/software/appstream/docs/chap-Metadata.html#tag-description-->
+									<description><![CDATA[
+									<p>Initial release</p>
+									<ul>
+										<li>Feature complete</li>
+									</ul>
+									]]></description>
+								</release>
+							</releases>
+							<manifest>
+								<appId>ca.footeware.javagi.journal</appId>
+								<sdkExtensions>
+									<sdkExtension>org.freedesktop.Sdk.Extension.openjdk25</sdkExtension>
+								</sdkExtensions>
+								<finishArgs>
+									<finishArg>--socket=session-bus</finishArg>
+									<finishArg>--socket=wayland</finishArg>
+									<finishArg>--socket=ssh-auth</finishArg>
+									<finishArg>--device=dri</finishArg>
+									<finishArg>--share=network</finishArg>
+									<finishArg>--share=ipc</finishArg>
+									<finishArg>--filesystem=home</finishArg>
+									<finishArg>--env=PATH=/app/jre/bin:/app/bin:/usr/bin</finishArg>
+									<finishArg>--env=JAVA_HOME=/app/jre</finishArg>
+								</finishArgs>
+							</manifest>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+
+	<name>Journal</name>
+
+	<description>An encrypted daily journal. Password-encrypted and navigable via a built-in calendar. It uses a local text file in properties format where the keys are dates and the values are encrypted.</description>
+
+	<url>https://github.com/CraigFoote/ca.footeware.javagi.journal</url>
+
+	<inceptionYear>2025</inceptionYear>
+
+	<organization>
+		<name>Footeware.ca</name>
+		<url>https://footeware.ca</url>
+	</organization>
+
+	<scm>
+		<url>https://github.com/CraigFoote/ca.footeware.javagi.journal</url>
+		<connection>
+			scm:git:https://github.com/CraigFoote/ca.footeware.javagi.journal.git</connection>
+		<developerConnection>
+			scm:git:https://github.com/CraigFoote/ca.footeware.javagi.journal.git</developerConnection>
+	</scm>
+	
+	<issueManagement>
+		<url>https://github.com/CraigFoote/ca.footeware.javagi.journal/issues</url>
+		<system>Github</system>
+	</issueManagement>
+	
+	<!--necessary until flatpak-maven-plugin is released-->
+	<pluginRepositories>
+		<pluginRepository>
+			<id>central-snapshots</id>
+			<url>https://central.sonatype.com/repository/maven-snapshots/</url>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</pluginRepository>
+	</pluginRepositories>
+
+    <!--must be included for flatpak plugin -->
+	<!--See https://spdx.org/licenses/-->
+	<licenses>
+		<license>
+			<name>GPL-3.0-or-later</name>
+			<url>https://spdx.org/licenses/GPL-3.0-or-later.html</url>
+			<distribution>repo</distribution>
+			<comments>project</comments>
+		</license>
+		<!--defaults to FSFAP if omitted -->
+		<license>
+			<name>FSFAP</name>
+			<url>https://spdx.org/licenses/FSFAP.html</url>
+			<distribution>repo</distribution>
+			<comments>metadata</comments>
+		</license>
+	</licenses>
+
+	<!--must be included for flatpak plugin -->
+	<developers>
+		<developer>
+			<!--must be reverse DNS notation-->
+			<id>ca.footeware.craigfoote</id> <!--required-->
+			<name>Craig Foote</name> <!--required-->
+			<email>CraigFoote@gmail.com</email> <!--optional-->
+			<url>https://github.com/CraigFoote</url> <!--optional-->
+			<organization>Footeware</organization> <!--optional-->
+			<organizationUrl>https://footeware.ca</organizationUrl> <!--optional-->
+			<roles><!--optional-->
+				<role>developer</role>
+			</roles>
+			<timezone>America/Toronto</timezone> <!--optional-->
+		</developer>
+	</developers>
+</project>
 ```
-
-You *very probably* want to add your own portals too. Do this by overriding the `<manifest/>` and the `<finishArgs/>` within.
-
-```xml
-<configuration>
-	...
-	<manifest>
-		<finishArgs>
-			<finishArg>--socket=x11</finishArg>
-			<finishArg>--filesystem=home</finishArg>
-		</finishArgs>
-	</manifest>
-</configuration>
-```
-
-You *probably* want to supply your own `appId` if the automatically derived one does not suit your needs.
-
-```xml
-<configuration>
-	<manifiest>
-		<appId>com.acme.Abc</appId>
-	</manifiest>
-</configuration>
-```
-
-A more complete example ..
-
-```xml
-<configuration>
-	<mainClass>com.acme.Abc</mainClass> <!-- required -->
-	<modules>false</modules> <!-- disable JPMS -->
-	<manifest>
-		<appId>com.acme.Abc</appId>
-		<sdkExtensions>
-			<sdkExtension>org.freedesktop.Sdk.Extension.openjdk17</sdkExtension>
-		</sdkExtensions>
-		<finishArgs>
-			<finishArg>--socket=session-bus</finishArg>
-			<finishArg>--socket=x11</finishArg>
-			<finishArg>--socket=ssh-auth</finishArg>
-			<finishArg>--device=dri</finishArg>
-			<finishArg>--share=network</finishArg>
-			<finishArg>--share=ipc</finishArg>
-			<finishArg>--filesystem=home</finishArg>
-		</finishArgs>
-	</manifest>
-	<launcherPreCommands>
-		<launcherPreCommand>echo '(C) 2023 AwesomeSuperSofwareSolutions Ltd'</launcherPreCommand>
-	</launcherPreCommands>
-	<excludeArtifacts>
-		<!-- not needed by flatpak version, so exclude it -->
-		<excludeArtifact>com.install4j</excludeArtifact>
-	</excludeArtifacts>
-	<iconFile>src/main/svg/icon.svg</iconFile> <!-- icon not in standard location -->
-</configuration>
-```
-
-Any element in either the `<manifest/>`, `<desktopEntry/>` or `<metaInfo/>` can generally be overridden. There are also lots of other options in the root `<configuration/>`.  
-
-## Usage
-
-```
-mvn clean package uk.co.bithatch:maven-flatpak-plugin:generate
-```
-
-This will by default generate the Flatpak manifest and others in `target/app`. So from here you can build the package.
-
-```
-cd target/app
-flatpak-builder build-dir com.acme.Abc.yml
-```
-
-And then test and run.
-
-```
-flatpak-builder --user --install --force-clean build-dir com.acme.Abc.yml
-flatpak run com.acme.Abc
-```
-
-Find out more in the [official documentation](https://docs.flatpak.org/en/latest/building.html).
-
-
-
-### Bind The Plugin To A Phase
-
-You might want to `generate` the Flatpak data as part of the standard Maven `package` phase.
-
-```xml
-<executions>
-	<execution>
-		<id>pushsftp-jfx-native-image</id>
-		<phase>package</phase>
-		<goals>
-			<goal>generate</goal>
-		</goals>
-	</execution>
-</executions>
-```
-
-In which case you can just do `mvn clean package`. 
 
 ## TODO
 
-There is a lot still to do, some highlights include.
-
- * Auto-detect main class.
- * Call `flatpak-builder` to actually build packages for you.
- * Publish to Flathub.
- * Investigate Flatpak build systems.
- * More app types.
- 
-
-
+* Create a separate goal to call `flatpak-builder` to build repository.
+* Create a separate goal to call `flatpak-builder` to build .flatpak file,
+* Release the plugin to maven central.

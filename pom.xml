@@ -9,7 +9,7 @@
 	<packaging>maven-plugin</packaging>
 
 	<name>${project.artifactId}</name>
-	<description>Generate Flatpak artifacts for flatpak-builder</description>
+	<description>Generate Flatpak artifacts.</description>
 
 	<properties>
 		<maven.compiler.release>8</maven.compiler.release>
@@ -53,11 +53,20 @@
 		<url>https://github.com/CraigFoote/flatpak-maven-plugin/issues</url>
 	</issueManagement>
 
+	<!--must be included for flatpak plugin -->
 	<developers>
 		<developer>
-			<id>CraigFoote</id>
-			<name>Craig Foote</name>
-			<email>CraigFoote@gmail.com</email>
+			<!--must be reverse DNS notation-->
+			<id>ca.footeware.craigfoote</id> <!--required-->
+			<name>Craig Foote</name> <!--required-->
+			<email>CraigFoote@gmail.com</email> <!--optional-->
+			<url>https://github.com/CraigFoote</url> <!--optional-->
+			<organization>Footeware</organization> <!--optional-->
+			<organizationUrl>https://footeware.ca</organizationUrl> <!--optional-->
+			<roles><!--optional-->
+				<role>developer</role>
+			</roles>
+			<timezone>America/Toronto</timezone> <!--optional-->
 		</developer>
 	</developers>
 
@@ -144,6 +153,11 @@
 			<artifactId>javax.inject</artifactId>
 			<version>1</version>
 			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>xom</groupId>
+			<artifactId>xom</artifactId>
+			<version>1.3.9</version>
 		</dependency>
 	</dependencies>
 

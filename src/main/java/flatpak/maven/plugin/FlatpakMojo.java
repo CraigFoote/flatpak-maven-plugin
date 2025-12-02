@@ -57,7 +57,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import flatpak.maven.plugin.exceptions.MetaInfoException;
@@ -68,16 +67,21 @@ import flatpak.maven.plugin.models.Image;
 import flatpak.maven.plugin.models.Launchable;
 import flatpak.maven.plugin.models.Manifest;
 import flatpak.maven.plugin.models.MetaInfo;
+import flatpak.maven.plugin.models.MetaInfoGenerator;
 import flatpak.maven.plugin.models.Module;
 import flatpak.maven.plugin.models.Release;
 import flatpak.maven.plugin.models.Screenshot;
 import flatpak.maven.plugin.models.Source;
 import flatpak.maven.plugin.models.Url;
+import nu.xom.Document;
+import nu.xom.ParsingException;
+import nu.xom.Serializer;
 
 @Mojo(threadSafe = true, name = "prepare-build", defaultPhase = LifecyclePhase.PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, requiresProject = true)
 public class FlatpakMojo extends AbstractMojo {
 
 	private static final String APP_SHARE = "/app/share";
+	private static final Logger LOGGER = LoggerFactory.getLogger(FlatpakMojo.class);
 	private static final String OPENJDK = "openjdk";
 	private static final String SIMPLE = "simple";
 
@@ -161,8 +165,6 @@ public class FlatpakMojo extends AbstractMojo {
 	@Parameter
 	private String[] launcherPreCommands;
 
-	private final Logger logger = LoggerFactory.getLogger(FlatpakMojo.class);
-
 	@Parameter
 	private boolean mainArtifactIsModule;
 
@@ -243,7 +245,7 @@ public class FlatpakMojo extends AbstractMojo {
 
 	private void addDesktopEntry(Module appModule) {
 		if (!desktopEntry.isIgnore()) {
-			logger.info("Creating .desktop file");
+			LOGGER.info("Creating .desktop file");
 			desktopEntry.setType("Application");
 			desktopEntry.setName(project.getName());
 			desktopEntry.setComment(project.getDescription());
@@ -280,7 +282,7 @@ public class FlatpakMojo extends AbstractMojo {
 	 */
 	private void addGSchema(Module appModule) throws IOException {
 		if (gschemaPath != null && !gschemaPath.isEmpty()) {
-			logger.info("Adding gschema");
+			LOGGER.info("Adding gschema");
 			Path path = Paths.get(project.getBasedir().toPath().toString(), gschemaPath);
 			URI uri = URI.create("file://" + path.toString());
 			File sourceFile = new File(uri);
@@ -305,7 +307,7 @@ public class FlatpakMojo extends AbstractMojo {
 
 	private void addIcon(Module appModule) throws IOException {
 		if (iconPath != null) {
-			logger.info("Handling icon file");
+			LOGGER.info("Handling icon file");
 			File iconfile = new File(iconPath);
 			String ext = getExtension(iconPath);
 			String appIconFileName = manifest.getAppId() + "." + ext;
@@ -318,7 +320,7 @@ public class FlatpakMojo extends AbstractMojo {
 
 	private void addLauncher(Module appModule, List<String> classPaths, List<String> modulePaths,
 			boolean mainArtifactIsModule) throws IOException {
-		logger.info("Adding launcher");
+		LOGGER.info("Adding launcher");
 		appModule.getBuildCommands().add(formatInstall(manifest.getCommand(), "/app/bin"));
 		appModule.getSources().add(new Source(manifest.getCommand()));
 		try (OutputStream out = new FileOutputStream(new File(appDirectory, manifest.getCommand()))) {
@@ -327,7 +329,7 @@ public class FlatpakMojo extends AbstractMojo {
 	}
 
 	private void addManifestDefaults() {
-		logger.info("Adding defaults to manifest");
+		LOGGER.info("Adding defaults to manifest");
 		manifest.setAppId(project.getGroupId() + "." + project.getArtifactId());
 		manifest.setRuntime(runtime);
 		manifest.setRuntimeVersion(runtimeVersion);
@@ -500,7 +502,7 @@ public class FlatpakMojo extends AbstractMojo {
 
 	private void copy(String reason, File p1, File p2, long mod) throws IOException {
 		String message = String.format("Copy %s - %s to %s", reason, p1.getAbsolutePath(), p2.getAbsolutePath());
-		logger.info(message);
+		LOGGER.info(message);
 		p2.getParentFile().mkdirs();
 		try (OutputStream out = new FileOutputStream(p2)) {
 			Files.copy(p1.toPath(), out);
@@ -514,7 +516,7 @@ public class FlatpakMojo extends AbstractMojo {
 	private boolean doArtifact(Module appModule, org.apache.maven.artifact.Artifact a, List<String> classPaths,
 			List<String> modulePaths) throws MojoExecutionException, IOException, NoSuchAlgorithmException {
 		String message = String.format("Processing %s", a.getFile().getName());
-		logger.debug(message);
+		LOGGER.debug(message);
 
 		StringBuilder builder = new StringBuilder();
 		builder.append(a.getGroupId());
@@ -540,7 +542,7 @@ public class FlatpakMojo extends AbstractMojo {
 
 		if (containsArtifact(excludeArtifacts, aetherArtifact)) {
 			message = String.format("Artifact %s is explicitly excluded.", a.getArtifactId());
-			logger.info(message);
+			LOGGER.info(message);
 			return false;
 		}
 
@@ -549,7 +551,7 @@ public class FlatpakMojo extends AbstractMojo {
 			message = String.format(
 					"Artifact %s has no attached file. Its content will not be copied in the target model directory.",
 					aetherArtifact.getArtifactId());
-			logger.warn(message);
+			LOGGER.warn(message);
 			return false;
 		}
 
@@ -612,8 +614,10 @@ public class FlatpakMojo extends AbstractMojo {
 			}
 
 			File metaInfoFile = getMetaInfoFile();
-			try (PrintWriter out = new PrintWriter(metaInfoFile)) {
+			try (OutputStream out = new FileOutputStream(metaInfoFile)) {
 				writeMetaInfo(metaInfo, out);
+			} catch (ParsingException e) {
+				throw new MetaInfoException("An error occurred writing the metaInfo file.", e);
 			}
 		} catch (IOException | NoSuchAlgorithmException | MetaInfoException e) {
 			throw new MojoExecutionException("Failed to write manifest.", e);
@@ -693,7 +697,7 @@ public class FlatpakMojo extends AbstractMojo {
 			}
 		} catch (IOException e) {
 			String message = String.format("Unable to read icon file %s.", iconFile);
-			logger.error(message);
+			LOGGER.error(message);
 		}
 		// fallback
 		return "256x256";
@@ -717,7 +721,7 @@ public class FlatpakMojo extends AbstractMojo {
 			}
 		}
 		if (metaDataLicenseName == null || metaDataLicenseName.isEmpty()) {
-			logger.warn("Required metadata license not specified in pom.xml. Defaulting to 'FSFAP'.");
+			LOGGER.warn("Required metadata license not specified in pom.xml. Defaulting to 'FSFAP'.");
 			metaDataLicenseName = "FSFAP";
 		}
 		return metaDataLicenseName;
@@ -790,7 +794,7 @@ public class FlatpakMojo extends AbstractMojo {
 			File file) throws IOException, NoSuchAlgorithmException {
 		String entryPath = getFileName(a);
 		String message = String.format("Adding %s", a.getFile().getName());
-		logger.info(message);
+		LOGGER.info(message);
 		String remoteUrl = validateUrl(mavenUrl(resolutionResult));
 		Source entry = new Source();
 		if (remotesFromOriginalSource) {
@@ -917,7 +921,7 @@ public class FlatpakMojo extends AbstractMojo {
 						return resolutionResult;
 					}
 				} catch (MojoExecutionException mee) {
-					logger.error("An error occurred resolving remote artifacts.", mee);
+					LOGGER.error("An error occurred resolving remote artifacts.", mee);
 				}
 			}
 		}
@@ -978,13 +982,14 @@ public class FlatpakMojo extends AbstractMojo {
 			conx.getInputStream().close();
 			return address;
 		} catch (Exception e) {
-			logger.warn(MessageFormat.format("{0} will use local copy as remote failed verification check.", address));
+			LOGGER.warn(MessageFormat.format("{0} will use local copy as remote failed verification check.", address));
 			return null;
 		}
 	}
 
 	private void writeDesktopEntry(OutputStream out, DesktopEntry desktopEntry) {
 		assert (out != null && desktopEntry != null);
+		LOGGER.info("Writing .desktop file.");
 		try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(out))) {
 			writer.println("[Desktop Entry]");
 			writer.println("Version=1.0");
@@ -1006,6 +1011,7 @@ public class FlatpakMojo extends AbstractMojo {
 
 	private void writeLauncher(Writer writer, List<String> classPaths, List<String> modulePaths,
 			boolean mainArtificateIsModule) {
+		LOGGER.info("Writing launcher file.");
 		try (PrintWriter pw = new PrintWriter(writer, true)) {
 			pw.println("#!/bin/bash");
 			if (launcherPreCommands != null) {
@@ -1032,20 +1038,16 @@ public class FlatpakMojo extends AbstractMojo {
 	}
 
 	private void writeManifest(Manifest manifest, Writer writer) throws IOException {
+		LOGGER.info("Writing manifest file.");
 		ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
 		mapper.writeValue(writer, manifest);
 	}
 
-	private void writeMetaInfo(MetaInfo metaInfo, PrintWriter writer) throws IOException {
-		XmlMapper mapper = new XmlMapper();
-		mapper.writerWithDefaultPrettyPrinter().writeValue(writer, metaInfo);
-
-		// TODO finish or find a way to config mapper to allow <p>
-//		writer.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-//		writer.println("<component>");
-//		writer.println("\t" + metaInfo.getReleases().getFirst().getDescription());
-//		writer.println("</component>");
-//		writer.flush();
-//		writer.close();
+	private void writeMetaInfo(MetaInfo metaInfo, OutputStream out) throws ParsingException, IOException {
+		LOGGER.info("Writing metaInfo file.");
+		Document document = MetaInfoGenerator.generate(metaInfo);
+		Serializer serializer = new Serializer(out, "UTF-8");
+		serializer.setIndent(4);
+		serializer.write(document);
 	}
 }
