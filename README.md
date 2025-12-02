@@ -131,7 +131,7 @@ A lot of the required parameters are taken from the stock pom properties. The re
             <plugin>
                 <groupId>ca.footeware</groupId>
                 <artifactId>flatpak-maven-plugin</artifactId>
-                <version>1.0.5-SNAPSHOT</version>
+                <version>1.0.6-SNAPSHOT</version>
                 <executions>
                     <execution>
                         <id>prepare</id>
