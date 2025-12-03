@@ -1,5 +1,8 @@
 package flatpak.maven.plugin.models;
 
+/**
+ * Values required to create a .desktop file.
+ */
 public class DesktopEntry {
 
 	private String categories;
@@ -11,67 +14,154 @@ public class DesktopEntry {
 	private String startupWMClass;
 	private String type;
 
+	/**
+	 * Constructor.
+	 */
+	public DesktopEntry() {
+		// empty
+	}
+
+	/**
+	 * Get the categories.
+	 *
+	 * @return {@link String}
+	 */
 	public String getCategories() {
 		return categories;
 	}
 
-	public final String getComment() {
+	/**
+	 * Get the comment.
+	 *
+	 * @return {@link String}
+	 */
+	public String getComment() {
 		return comment;
 	}
 
-	public final String getExec() {
+	/**
+	 * Get the exec line.
+	 *
+	 * @return {@link String}
+	 */
+	public String getExec() {
 		return exec;
 	}
 
-	public final String getIcon() {
+	/**
+	 * Gets the icon name.
+	 *
+	 * @return {@link String}
+	 */
+	public String getIcon() {
 		return icon;
 	}
 
-	public final String getName() {
+	/**
+	 * Get the application's name.
+	 *
+	 * @return {@link String}
+	 */
+	public String getName() {
 		return name;
 	}
 
+	/**
+	 * Get the application's startupWMClass.
+	 *
+	 * @return {@link String}
+	 */
 	public String getStartupWMClass() {
 		return startupWMClass;
 	}
 
-	public final String getType() {
+	/**
+	 * Get the application type.
+	 *
+	 * @return {@link String}
+	 */
+	public String getType() {
 		return type;
 	}
 
-	public final boolean isIgnore() {
+	/**
+	 * Get whether or not to ignore creating the .desktop file.
+	 *
+	 * @return boolean true if .desktop creation is ignored
+	 */
+	public boolean isIgnore() {
 		return ignore;
 	}
 
+	/**
+	 * Set the application's categories.
+	 *
+	 * @param categories {@link String} in the form "cat1;cat2"
+	 */
 	public void setCategories(String categories) {
 		this.categories = categories;
 	}
 
-	public final void setComment(String comment) {
+	/**
+	 * Set the .desktop file's comment property.
+	 *
+	 * @param comment {@link String}
+	 */
+	public void setComment(String comment) {
 		this.comment = comment;
 	}
 
-	public final void setExec(String exec) {
+	/**
+	 * Set the .desktop file's exec property.
+	 *
+	 * @param exec {@link String}
+	 */
+	public void setExec(String exec) {
 		this.exec = exec;
 	}
 
-	public final void setIcon(String icon) {
+	/**
+	 * Set the .desktop file's icon property.
+	 *
+	 * @param icon {@link String}
+	 */
+	public void setIcon(String icon) {
 		this.icon = icon;
 	}
 
-	public final void setIgnore(boolean ignore) {
+	/**
+	 * Set whether or not to ignore the creation of the .desktop file.
+	 *
+	 * @param ignore boolean
+	 */
+	public void setIgnore(boolean ignore) {
 		this.ignore = ignore;
 	}
 
-	public final void setName(String name) {
+	/**
+	 * Set the .desktop file's name property.
+	 *
+	 * @param name {@link String}
+	 */
+	public void setName(String name) {
 		this.name = name;
 	}
 
+	/**
+	 * Set the .desktop file's statupWMClass property.
+	 *
+	 * @param startupWMClass {@link String}
+	 */
 	public void setStartupWMClass(String startupWMClass) {
 		this.startupWMClass = startupWMClass;
 	}
 
-	public final void setType(String type) {
+	/**
+	 * Set the .desktop file's type property.
+	 *
+	 * @param type {@link String}
+	 */
+	public void setType(String type) {
 		this.type = type;
 	}
 }

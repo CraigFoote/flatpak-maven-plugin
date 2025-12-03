@@ -1,10 +1,10 @@
-/**
- *
- */
 package flatpak.maven.plugin.models;
 
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 
+/**
+ * The project's developer.
+ */
 public class Developer {
 
 	private String id;
@@ -22,7 +22,9 @@ public class Developer {
 	}
 
 	/**
-	 * @return the id
+	 * Get the developer's id.
+	 *
+	 * @return {@link String}
 	 */
 	@JacksonXmlProperty(isAttribute = true)
 	public String getId() {
@@ -30,24 +32,29 @@ public class Developer {
 	}
 
 	/**
-	 * @return the name
+	 * Get the developer's name.
+	 *
+	 * @return {@link String}
 	 */
 	public String getName() {
 		return name;
 	}
 
 	/**
-	 * @param id the id to set
+	 * Set the developer's id.
+	 *
+	 * @param id {@link String}
 	 */
 	public void setId(String id) {
 		this.id = id;
 	}
 
 	/**
-	 * @param name the name to set
+	 * Set the developer's name.
+	 *
+	 * @param name {@link String}
 	 */
 	public void setName(String name) {
 		this.name = name;
 	}
-
 }

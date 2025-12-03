@@ -7,7 +7,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlText;
 
 /**
- * Encapsulates launchable information for flatpak metainfo.xml file generation.
+ * Launchable information for flatpak metainfo.xml file generation.
  *
  * @author Footeware.ca
  */
@@ -19,7 +19,7 @@ public class Launchable {
 	/**
 	 * Constructor.
 	 *
-	 * @param type {@link String}
+	 * @param type  {@link String}
 	 * @param value {@link String}
 	 */
 	public Launchable(String type, String value) {
@@ -28,7 +28,9 @@ public class Launchable {
 	}
 
 	/**
-	 * @return the type
+	 * Get the launchable's type.
+	 *
+	 * @return {@link String}
 	 */
 	@JacksonXmlProperty(isAttribute = true)
 	public String getType() {
@@ -36,7 +38,9 @@ public class Launchable {
 	}
 
 	/**
-	 * @return the value
+	 * Get the launchable's value.
+	 *
+	 * @return {@link String}
 	 */
 	@JacksonXmlText
 	public String getValue() {
@@ -44,14 +48,18 @@ public class Launchable {
 	}
 
 	/**
-	 * @param type the type to set
+	 * Get the launchable's type.
+	 *
+	 * @param type {@link String}
 	 */
 	public void setType(String type) {
 		this.type = type;
 	}
 
 	/**
-	 * @param value the value to set
+	 * Gets the launchable's value.
+	 *
+	 * @param value {@link String}
 	 */
 	public void setValue(String value) {
 		this.value = value;

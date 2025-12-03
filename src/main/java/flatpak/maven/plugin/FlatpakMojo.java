@@ -77,6 +77,9 @@ import nu.xom.Document;
 import nu.xom.ParsingException;
 import nu.xom.Serializer;
 
+/**
+ * Goal that creates necessary Flatpak artifacts from a Java project.
+ */
 @Mojo(threadSafe = true, name = "prepare-build", defaultPhase = LifecyclePhase.PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, requiresProject = true)
 public class FlatpakMojo extends AbstractMojo {
 
@@ -206,6 +209,9 @@ public class FlatpakMojo extends AbstractMojo {
 	@Parameter(required = true)
 	private String sdk;
 
+	/**
+	 * The maven session.
+	 */
 	@Parameter(defaultValue = "${session}", readonly = true, required = true)
 	protected MavenSession session;
 

@@ -10,9 +10,10 @@ See my [Journal](https://github.com/CraigFoote/ca.footeware.javagi.journal) proj
 
 ## Maven Goals
 
-A single goal is currently provided. 
+Two goals are currently provided: 
 
 * `prepare-build` - Generate Flatpak artifacts required for `flatpak-builder`.
+* `build-repo` - Calls `flatpak-builder` to create a flatpak repository from the prepared artifacts
 
 ## Add Plugin To Your POM
 
@@ -36,7 +37,7 @@ And in your `<build>` section:
 <plugin>
     <groupId>ca.footeware</groupId>
     <artifactId>flatpak-maven-plugin</artifactId>
-    <version>1.0.6-SNAPSHOT</version>
+    <version>1.2.0-SNAPSHOT</version>
     <executions>
         <execution>
             <id>prepare</id>
@@ -48,7 +49,15 @@ And in your `<build>` section:
                 <!-- required parameters, see below -->
             </configuration>
         </execution>
-    </configuration>
+        <execution>
+            <id>build</id>
+            <phase>package</phase>
+            <goals>
+                <goal>build-repo</goal>
+            </goals>
+            <!-- default configuration -->
+        </execution>
+    </executions>
 </plugin>
 ```
 
@@ -131,8 +140,9 @@ A lot of the required parameters are taken from the stock pom properties. The re
             <plugin>
                 <groupId>ca.footeware</groupId>
                 <artifactId>flatpak-maven-plugin</artifactId>
-                <version>1.0.6-SNAPSHOT</version>
+                <version>1.2.0-SNAPSHOT</version>
                 <executions>
+                    <!--build the artifacts needed for a flatpak build-->
                     <execution>
                         <id>prepare</id>
                         <phase>package</phase>
@@ -224,9 +234,7 @@ A lot of the required parameters are taken from the stock pom properties. The re
                                 <finishArgs>
                                     <finishArg>--socket=session-bus</finishArg>
                                     <finishArg>--socket=wayland</finishArg>
-                                    <finishArg>--socket=ssh-auth</finishArg>
                                     <finishArg>--device=dri</finishArg>
-                                    <finishArg>--share=network</finishArg>
                                     <finishArg>--share=ipc</finishArg>
                                     <finishArg>--filesystem=home</finishArg>
                                     <finishArg>--env=PATH=/app/jre/bin:/app/bin:/usr/bin</finishArg>
@@ -234,6 +242,15 @@ A lot of the required parameters are taken from the stock pom properties. The re
                                 </finishArgs>
                             </manifest>
                         </configuration>
+                    </execution>
+                    <!--build the flatpak repository-->
+                    <execution>
+                        <id>build</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>build-repo</goal>
+                        </goals>
+                        <!--no configuration-->
                     </execution>
                 </executions>
             </plugin>
@@ -255,10 +272,8 @@ A lot of the required parameters are taken from the stock pom properties. The re
 
     <scm>
         <url>https://github.com/CraigFoote/ca.footeware.javagi.journal</url>
-        <connection>
-            scm:git:https://github.com/CraigFoote/ca.footeware.javagi.journal.git</connection>
-        <developerConnection>
-            scm:git:https://github.com/CraigFoote/ca.footeware.javagi.journal.git</developerConnection>
+        <connection>scm:git:https://github.com/CraigFoote/ca.footeware.javagi.journal.git</connection>
+        <developerConnection>scm:git:https://github.com/CraigFoote/ca.footeware.javagi.journal.git</developerConnection>
     </scm>
 
     <issueManagement>
@@ -277,7 +292,7 @@ A lot of the required parameters are taken from the stock pom properties. The re
         </pluginRepository>
     </pluginRepositories>
 
-    <!--must be included for flatpak plugin -->
+    <!--must be included for flatpak plugin -->
     <!--See https://spdx.org/licenses/-->
     <licenses>
         <license>
@@ -316,8 +331,7 @@ A lot of the required parameters are taken from the stock pom properties. The re
 
 ## TODO
 
-* Create a separate goal to call `flatpak-builder` to build repository.
-* Create a separate goal to call `flatpak` to build .flatpak file,
+* Create a separate goal to call `flatpak` to export .flatpak file,
 * Site development.
 * Investigate and release the plugin to maven central.
 

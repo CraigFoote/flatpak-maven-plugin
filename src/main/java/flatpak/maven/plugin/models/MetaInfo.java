@@ -10,7 +10,10 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 
 /**
- * https://www.freedesktop.org/software/appstream/docs/sect-AppStream-YAML.html
+ * An applications descriptor used by flatpak.
+ *
+ * @see <a href=
+ *      "https://www.freedesktop.org/software/appstream/docs/sect-AppStream-YAML.html">AppStream-YAML</a>
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JacksonXmlRootElement(localName = "component")
@@ -25,7 +28,6 @@ public class MetaInfo {
 	private List<Icon> icons = new ArrayList<>();
 	private String id;
 	private Launchable launchable;
-	private String merge;
 	private String metadataLicense;
 	private String name;
 	private String packageName;
@@ -43,152 +45,321 @@ public class MetaInfo {
 	private String type;
 	private Url url;
 
+	/**
+	 * Constructor.
+	 */
+	public MetaInfo() {
+		// public
+	}
+
+	/**
+	 * Get the branding.
+	 *
+	 * @return {@link Branding}
+	 */
 	public Branding getBranding() {
 		return branding;
 	}
 
+	/**
+	 * Get the content rating.
+	 *
+	 * @return {@link ContentRating}
+	 */
 	@JacksonXmlProperty(localName = "content_rating")
 	public ContentRating getContentRating() {
 		return contentRating;
 	}
 
+	/**
+	 * Get the description.
+	 *
+	 * @return {@link String}
+	 */
 	@JsonRawValue
-	public final String getDescription() {
+	public String getDescription() {
 		return description;
 	}
 
+	/**
+	 * Get the developer.
+	 *
+	 * @return {@link Developer}
+	 */
 	public Developer getDeveloper() {
 		return developer;
 	}
 
+	/**
+	 * Get the icons.
+	 *
+	 * @return {@link List} of {@link Icon}
+	 */
 	@JacksonXmlElementWrapper(useWrapping = false)
-	public final List<Icon> getIcons() {
+	public List<Icon> getIcons() {
 		return icons;
 	}
 
-	public final String getId() {
+	/**
+	 * Get the id.
+	 *
+	 * @return {@link String}
+	 */
+	public String getId() {
 		return id;
 	}
 
+	/**
+	 * Get the launchable.
+	 *
+	 * @return {@link Launchable}
+	 */
 	public Launchable getLaunchable() {
 		return launchable;
 	}
 
-	public final String getMerge() {
-		return merge;
-	}
-
+	/**
+	 * Get the metadata license.
+	 *
+	 * @return {@link String}
+	 */
 	@JacksonXmlProperty(localName = "metadata_license")
-	public final String getMetadataLicense() {
+	public String getMetadataLicense() {
 		return metadataLicense;
 	}
 
-	public final String getName() {
+	/**
+	 * Get the name.
+	 *
+	 * @return {@link String}
+	 */
+	public String getName() {
 		return name;
 	}
 
-	public final String getPackageName() {
+	/**
+	 * Get the package name.
+	 *
+	 * @return {@link String}
+	 */
+	public String getPackageName() {
 		return packageName;
 	}
 
+	/**
+	 * Get the project group.
+	 *
+	 * @return {@link String}
+	 */
 	@JacksonXmlProperty(localName = "project_group")
-	public final String getProjectGroup() {
+	public String getProjectGroup() {
 		return projectGroup;
 	}
 
+	/**
+	 * Get the project license.
+	 *
+	 * @return {@link String}
+	 */
 	@JacksonXmlProperty(localName = "project_license")
-	public final String getProjectLicense() {
+	public String getProjectLicense() {
 		return projectLicense;
 	}
 
+	/**
+	 * Get the releases.
+	 *
+	 * @return {@link List} of {@link Release}
+	 */
 	public List<Release> getReleases() {
 		return releases;
 	}
 
+	/**
+	 * Get the screenshots.
+	 *
+	 * @return {@link List} of {@link Screenshot}
+	 */
 	public List<Screenshot> getScreenshots() {
 		return screenshots;
 	}
 
-	public final String getSourcePackage() {
+	/**
+	 * Get the source package.
+	 *
+	 * @return {@link String}
+	 */
+	public String getSourcePackage() {
 		return sourcePackage;
 	}
 
-	public final String getSummary() {
+	/**
+	 * Get the summary.
+	 *
+	 * @return {@link String}
+	 */
+	public String getSummary() {
 		return summary;
 	}
 
-	public final String getType() {
+	/**
+	 * Get the type.
+	 *
+	 * @return {@link String}
+	 */
+	public String getType() {
 		return type;
 	}
 
+	/**
+	 * Get the URL.
+	 *
+	 * @return {@link Url}
+	 */
 	public Url getUrl() {
 		return url;
 	}
 
+	/**
+	 * Set the branding.
+	 *
+	 * @param branding {@link Branding}
+	 */
 	public void setBranding(Branding branding) {
 		this.branding = branding;
 	}
 
+	/**
+	 * Set the content rating.
+	 *
+	 * @param contentRating {@link ContentRating}
+	 */
 	public void setContentRating(ContentRating contentRating) {
 		this.contentRating = contentRating;
 	}
 
-	public final void setDescription(String description) {
+	/**
+	 * Set the description.
+	 *
+	 * @param description {@link String}
+	 */
+	public void setDescription(String description) {
 		this.description = description;
 	}
 
+	/**
+	 * Set the developer.
+	 *
+	 * @param developer {@link Developer}
+	 */
 	public void setDeveloper(Developer developer) {
 		this.developer = developer;
 	}
 
-	public final void setId(String id) {
+	/**
+	 * Set the id.
+	 *
+	 * @param id {@link String}
+	 */
+	public void setId(String id) {
 		this.id = id;
 	}
 
+	/**
+	 * Set the launchable.
+	 *
+	 * @param launchable {@link Launchable}
+	 */
 	public void setLaunchable(Launchable launchable) {
 		this.launchable = launchable;
 	}
 
-	public final void setMerge(String merge) {
-		this.merge = merge;
-	}
-
-	public final void setMetadataLicense(String metaDataLicense) {
+	/**
+	 * Set the metadata license.
+	 *
+	 * @param metaDataLicense {@link String}
+	 */
+	public void setMetadataLicense(String metaDataLicense) {
 		this.metadataLicense = metaDataLicense;
 	}
 
+	/**
+	 * Set the name.
+	 *
+	 * @param name {@link String}
+	 */
 	public void setName(String name) {
 		this.name = name;
 	}
 
-	public final void setPackageName(String packageName) {
+	/**
+	 * Set the package name.
+	 *
+	 * @param packageName {@link String}
+	 */
+	public void setPackageName(String packageName) {
 		this.packageName = packageName;
 	}
 
-	public final void setProjectGroup(String projectGroup) {
+	/**
+	 * Set the project group.
+	 *
+	 * @param projectGroup {@link String}
+	 */
+	public void setProjectGroup(String projectGroup) {
 		this.projectGroup = projectGroup;
 	}
 
-	public final void setProjectLicense(String projectLicense) {
+	/**
+	 * Set the project license.
+	 *
+	 * @param projectLicense {@link String}
+	 */
+	public void setProjectLicense(String projectLicense) {
 		this.projectLicense = projectLicense;
 	}
 
+	/**
+	 * Set the releases.
+	 *
+	 * @param releases {@link List} of {@link Release}
+	 */
 	public void setReleases(List<Release> releases) {
 		this.releases = releases;
 	}
 
-	public final void setSourcePackage(String sourcePackage) {
+	/**
+	 * Set the source package.
+	 *
+	 * @param sourcePackage {@link String}
+	 */
+	public void setSourcePackage(String sourcePackage) {
 		this.sourcePackage = sourcePackage;
 	}
 
-	public final void setSummary(String summary) {
+	/**
+	 * Set the summary.
+	 *
+	 * @param summary {@link String}
+	 */
+	public void setSummary(String summary) {
 		this.summary = summary;
 	}
 
-	public final void setType(String type) {
+	/**
+	 * Set the type.
+	 *
+	 * @param type {@link String}
+	 */
+	public void setType(String type) {
 		this.type = type;
 	}
 
+	/**
+	 * Set the URL.
+	 *
+	 * @param url {@link Url}
+	 */
 	public void setUrl(Url url) {
 		this.url = url;
 	}

@@ -8,8 +8,6 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlText;
 
 /**
  * Encapsulates an Url `type` and `value`.
- *
- * @author Footeware.ca
  */
 public class Url {
 
@@ -28,7 +26,9 @@ public class Url {
 	}
 
 	/**
-	 * @return the type
+	 * Get the type.
+	 *
+	 * @return {@link String}
 	 */
 	@JacksonXmlProperty(isAttribute = true)
 	public String getType() {
@@ -36,7 +36,9 @@ public class Url {
 	}
 
 	/**
-	 * @return the value
+	 * Get the value.
+	 *
+	 * @return {@link String}
 	 */
 	@JacksonXmlText
 	public String getValue() {
@@ -44,14 +46,18 @@ public class Url {
 	}
 
 	/**
-	 * @param type the type to set
+	 * Set the type.
+	 *
+	 * @param type {@link String}
 	 */
 	public void setType(String type) {
 		this.type = type;
 	}
 
 	/**
-	 * @param value the value to set
+	 * Set the value.
+	 *
+	 * @param value {@link String}
 	 */
 	public void setValue(String value) {
 		this.value = value;

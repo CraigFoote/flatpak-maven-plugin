@@ -6,6 +6,9 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlText;
 
+/**
+ * The project's icon properties.
+ */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JacksonXmlRootElement(localName = "icon")
 public class Icon {
@@ -16,52 +19,109 @@ public class Icon {
 	private String type;
 	private Integer width;
 
+	/**
+	 * Constructor.
+	 */
+	public Icon() {
+		// empty
+	}
+
+	/**
+	 * Gets the icon's height.
+	 *
+	 * @return {@link Integer}
+	 */
 	@JsonProperty(value = "height")
 	@JacksonXmlProperty(isAttribute = true)
-	public final Integer getHeight() {
+	public Integer getHeight() {
 		return height;
 	}
 
+	/**
+	 * Get the icon's path.
+	 *
+	 * @return {@link String}
+	 */
 	@JacksonXmlText
-	public final String getPath() {
+	public String getPath() {
 		return path;
 	}
 
+	/**
+	 * Get the icon's scale.
+	 *
+	 * @return {@link Integer}
+	 */
 	@JsonProperty(value = "scale")
 	@JacksonXmlProperty(isAttribute = true)
-	public final Integer getScale() {
+	public Integer getScale() {
 		return scale;
 	}
 
+	/**
+	 * Get the icon's type.
+	 *
+	 * @return {@link String}
+	 */
 	@JsonProperty(value = "type")
 	@JacksonXmlProperty(isAttribute = true)
-	public final String getType() {
+	public String getType() {
 		return type;
 	}
 
+	/**
+	 * Get the icon's width.
+	 *
+	 * @return {@link Integer}
+	 */
 	@JsonProperty(value = "width")
 	@JacksonXmlProperty(isAttribute = true)
-	public final Integer getWidth() {
+	public Integer getWidth() {
 		return width;
 	}
 
-	public final void setHeight(Integer height) {
+	/**
+	 * Set the icon's height.
+	 *
+	 * @param height {@link Integer}
+	 */
+	public void setHeight(Integer height) {
 		this.height = height;
 	}
 
-	public final void setPath(String path) {
+	/**
+	 * Set the icon's path.
+	 *
+	 * @param path {@link String}
+	 */
+	public void setPath(String path) {
 		this.path = path;
 	}
 
-	public final void setScale(Integer scale) {
+	/**
+	 * Set the icon's scale.
+	 *
+	 * @param scale {@link Integer}
+	 */
+	public void setScale(Integer scale) {
 		this.scale = scale;
 	}
 
-	public final void setType(String type) {
+	/**
+	 * Set the icon's type property.
+	 *
+	 * @param type {@link String}
+	 */
+	public void setType(String type) {
 		this.type = type;
 	}
 
-	public final void setWidth(Integer width) {
+	/**
+	 * Set the icon's width.
+	 *
+	 * @param width {@link Integer}
+	 */
+	public void setWidth(Integer width) {
 		this.width = width;
 	}
 }

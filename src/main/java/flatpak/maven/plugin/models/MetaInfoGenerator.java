@@ -27,6 +27,14 @@ public class MetaInfoGenerator {
 		parent.appendChild(doc.getRootElement().copy());
 	}
 
+	/**
+	 * Creates a DOM {@link Document}.
+	 *
+	 * @param metaInfo {@link MetaInfo}
+	 * @return {@link Document}
+	 * @throws ParsingException if the world falls apart
+	 * @throws IOException      if dinosaurs return
+	 */
 	public static Document generate(MetaInfo metaInfo) throws ParsingException, IOException {
 		Element root = new Element("component");
 		root.addAttribute(new Attribute("type", "desktop-application"));
