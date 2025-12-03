@@ -81,10 +81,10 @@ import nu.xom.Serializer;
  * Goal that creates necessary Flatpak artifacts from a Java project.
  */
 @Mojo(threadSafe = true, name = "prepare-build", defaultPhase = LifecyclePhase.PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, requiresProject = true)
-public class FlatpakMojo extends AbstractMojo {
+public class PrepareBuildMojo extends AbstractMojo {
 
 	private static final String APP_SHARE = "/app/share";
-	private static final Logger LOGGER = LoggerFactory.getLogger(FlatpakMojo.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(PrepareBuildMojo.class);
 	private static final String OPENJDK = "openjdk";
 	private static final String SIMPLE = "simple";
 
@@ -242,7 +242,7 @@ public class FlatpakMojo extends AbstractMojo {
 	 * @param repoSystem {@link RepositorySystem}
 	 */
 	@Inject
-	public FlatpakMojo(RepositorySystem repoSystem) {
+	public PrepareBuildMojo(RepositorySystem repoSystem) {
 		this.repoSystem = repoSystem;
 		this.metaInfo = new MetaInfo();
 		this.manifest = new Manifest();

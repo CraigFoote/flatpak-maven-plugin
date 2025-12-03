@@ -12,8 +12,8 @@ See my [Journal](https://github.com/CraigFoote/ca.footeware.javagi.journal) proj
 
 Two goals are currently provided: 
 
-* `prepare-build` - Generate Flatpak artifacts required for `flatpak-builder`.
-* `build-repo` - Calls `flatpak-builder` to create a flatpak repository from the prepared artifacts
+1. `prepare-build` - Generate flatpak artifacts required for `flatpak-builder`.
+1. `build-repo` - Calls `flatpak-builder` to create a flatpak repository from the prepared artifacts
 
 ## Add Plugin To Your POM
 
@@ -37,7 +37,7 @@ And in your `<build>` section:
 <plugin>
     <groupId>ca.footeware</groupId>
     <artifactId>flatpak-maven-plugin</artifactId>
-    <version>1.2.0-SNAPSHOT</version>
+    <version>1.1.0-SNAPSHOT</version>
     <executions>
         <execution>
             <id>prepare</id>
@@ -140,7 +140,7 @@ A lot of the required parameters are taken from the stock pom properties. The re
             <plugin>
                 <groupId>ca.footeware</groupId>
                 <artifactId>flatpak-maven-plugin</artifactId>
-                <version>1.2.0-SNAPSHOT</version>
+                <version>1.1.0-SNAPSHOT</version>
                 <executions>
                     <!--build the artifacts needed for a flatpak build-->
                     <execution>
