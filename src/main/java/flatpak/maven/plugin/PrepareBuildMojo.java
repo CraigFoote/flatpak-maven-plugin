@@ -224,9 +224,6 @@ public class PrepareBuildMojo extends AbstractMojo {
 	@Parameter
 	private List<String> systemModules;
 
-	@Parameter
-	private File thumbnailsDirectory; // TODO
-
 	@Parameter(defaultValue = "true")
 	private boolean usingModules;
 
@@ -302,14 +299,6 @@ public class PrepareBuildMojo extends AbstractMojo {
 			appModule.getBuildCommands().add("glib-compile-schemas /app/share/glib-2.0/schemas");
 		}
 	}
-
-	// TODO thumbnails
-//	private void addImageFiles() throws IOException {
-//		for (File f : getImageFiles(thumbnailsDirectory)) {
-//			copy("Copying thumbnail to flatpak build folder.", f, new File(appDirectory, f.getName()),
-//					f.lastModified());
-//		}
-//	}
 
 	private void addIcon(Module appModule) throws IOException {
 		if (iconPath != null) {
@@ -619,13 +608,8 @@ public class PrepareBuildMojo extends AbstractMojo {
 				}
 			}
 
-			File metaInfoFile = getMetaInfoFile();
-			try (OutputStream out = new FileOutputStream(metaInfoFile)) {
-				writeMetaInfo(metaInfo, out);
-			} catch (ParsingException e) {
-				throw new MetaInfoException("An error occurred writing the metaInfo file.", e);
-			}
-		} catch (IOException | NoSuchAlgorithmException | MetaInfoException e) {
+			writeMetaInfo();
+		} catch (IOException | NoSuchAlgorithmException | MetaInfoException | ParsingException e) {
 			throw new MojoExecutionException("Failed to write manifest.", e);
 		}
 	}
@@ -1049,11 +1033,14 @@ public class PrepareBuildMojo extends AbstractMojo {
 		mapper.writeValue(writer, manifest);
 	}
 
-	private void writeMetaInfo(MetaInfo metaInfo, OutputStream out) throws ParsingException, IOException {
+	private void writeMetaInfo() throws ParsingException, IOException {
 		LOGGER.info("Writing metaInfo file.");
-		Document document = MetaInfoGenerator.generate(metaInfo);
-		Serializer serializer = new Serializer(out, "UTF-8");
-		serializer.setIndent(4);
-		serializer.write(document);
+		File metaInfoFile = getMetaInfoFile();
+		try (OutputStream out = new FileOutputStream(metaInfoFile)) {
+			Document document = MetaInfoGenerator.generate(metaInfo);
+			Serializer serializer = new Serializer(out, "UTF-8");
+			serializer.setIndent(4);
+			serializer.write(document);
+		}
 	}
 }

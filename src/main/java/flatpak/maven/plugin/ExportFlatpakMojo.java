@@ -17,12 +17,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Goal that builds a flatpak repository from prepared artifacts.
+ * Exports a provided flatpak repository to a .flatpak file.
  */
-@Mojo(threadSafe = true, name = "build-repo", defaultPhase = LifecyclePhase.PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, requiresProject = true)
-public class BuildRepoMojo extends AbstractMojo {
+@Mojo(threadSafe = true, name = "export-flatpak", defaultPhase = LifecyclePhase.PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, requiresProject = true)
+public class ExportFlatpakMojo extends AbstractMojo {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(BuildRepoMojo.class);
+	private static final String FLATPAK = ".flatpak";
+	private static final Logger LOGGER = LoggerFactory.getLogger(ExportFlatpakMojo.class);
 
 	@Parameter(defaultValue = "${project}", required = true, readonly = true)
 	private MavenProject project;
@@ -30,7 +31,7 @@ public class BuildRepoMojo extends AbstractMojo {
 	/**
 	 * Constructor.
 	 */
-	public BuildRepoMojo() {
+	public ExportFlatpakMojo() {
 		// empty
 	}
 
@@ -41,28 +42,45 @@ public class BuildRepoMojo extends AbstractMojo {
 		ProcessBuilder builder = new ProcessBuilder();
 		if (isWindows) {
 			LOGGER.info("Determined OS to be Windows. Executing 'cmd.exe'.");
-			builder.command("cmd.exe", "/c", "flatpak-builder", "--repo=repo", "--force-clean", "build-dir",
-					project.getGroupId() + "." + project.getArtifactId() + ".yml");
+			builder.command("cmd.exe", "/c", "flatpak", "build-bundle", "repo", project.getGroupId() + "."
+					+ project.getArtifactId() + FLATPAK + project.getGroupId() + "." + project.getArtifactId());
 		} else {
 			LOGGER.info("Determined OS to be something other than Windows. Executing shell command.");
-			builder.command("flatpak-builder", "--repo=repo", "--force-clean", "build-dir",
-					project.getGroupId() + "." + project.getArtifactId() + ".yml");
+			builder.command("flatpak", "build-bundle", "repo",
+					project.getGroupId() + "." + project.getArtifactId() + FLATPAK,
+					project.getGroupId() + "." + project.getArtifactId());
 		}
 
-		String workingDir = project.getBasedir() + File.separator + "target" + File.separator + "app" + File.separator;
+		String workingDir = project.getBasedir() + File.separator + "target" + File.separator + "app";
 		File workingFolder = new File(workingDir);
 		if (!workingFolder.exists()) {
 			throw new MojoExecutionException(
 					"The project's '/target/app/' folder was not found. Did you run the 'prepare-build' goal first?");
 		}
+		LOGGER.info("Found '/target/app/' folder.");
 		builder.directory(workingFolder);
+
+		// assume not found until found
+		boolean repoFound = false;
+		File[] childFiles = workingFolder.listFiles();
+		for (File childFile : childFiles) {
+			if ("repo".equals(childFile.getName())) {
+				repoFound = true;
+				break;
+			}
+		}
+		if (!repoFound) {
+			throw new MojoExecutionException(
+					"The project's '/target/app/repo' folder was not found. Did you run the 'build-repo' goal first?");
+		}
+		LOGGER.info("Found '/target/app/repo/' folder.");
 
 		String message = String.format("Executing command in folder: %s", builder.directory());
 		LOGGER.info(message);
 
 		Process process;
 		try {
-			message = String.format("Executing command: %s", builder.command());
+			message = String.format("Executing command: %s. This could take a while.", builder.command());
 			LOGGER.info(message);
 			process = builder.start();
 		} catch (IOException e) {
@@ -91,13 +109,14 @@ public class BuildRepoMojo extends AbstractMojo {
 		}
 
 		// confirm presence
-		String expectedRepoFolderLocation = workingDir + "repo";
-		File repoFolder = new File(expectedRepoFolderLocation);
-		if (!repoFolder.exists()) {
-			throw new MojoExecutionException(
-					"Error, expected built repository not found: " + expectedRepoFolderLocation);
+		String expectedFileLocation = workingDir + File.separator + project.getGroupId() + "." + project.getArtifactId()
+				+ FLATPAK;
+		File flatpak = new File(expectedFileLocation);
+		if (!flatpak.exists()) {
+			throw new MojoExecutionException("Error, expected built file not found: " + expectedFileLocation);
 		}
 
-		LOGGER.info("Success!");
+		message = String.format("%s created. Success!", flatpak.getAbsolutePath());
+		LOGGER.info(message);
 	}
 }

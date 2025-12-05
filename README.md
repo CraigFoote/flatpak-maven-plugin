@@ -2,20 +2,23 @@
 
 A fork of [maven-flatpak-plugin](https://github.com/bithatch/maven-flatpak-plugin) by Brett Smith.
 
-This plugin builds flatpak artifacts from a Java project. These artifacts can be passed to the `flatpak-builder` application to create a flatpak repository and a .flatpak application which can be installed via GNOME Software.
+This plugin builds flatpak artifacts from a Java project including a .flatpak application which can be installed via GNOME Software.
 
 It depends on several standard pom properties and the rest provided in a plugin configuration.
 
-See my [Journal](https://github.com/CraigFoote/ca.footeware.javagi.journal) project's pom.xml for full example usage (also listed below).
+See my [Journal](https://github.com/CraigFoote/ca.footeware.javagi.journal) project's pom.xml for full example usage (also listed below). It's only been tested with the Journal project so feedback in other contexts would be appreciated.
 
 ## Maven Goals
 
-Two goals are currently provided: 
+Three goals are provided: 
 
 1. `prepare-build` - Generate flatpak artifacts required for `flatpak-builder`.
-1. `build-repo` - Calls `flatpak-builder` to create a flatpak repository from the prepared artifacts
+2. `build-repo` - Calls `flatpak-builder` to create a flatpak repository from the prepared artifacts.
+3. `export-flatpak` - Calls `flatpak` to build a .flatpak bundle from the repo.
 
-## Add Plugin To Your POM
+The actual commands run for the last two goals are provided in the log.
+
+## Usage
 
 This plugin has not yet been released to Maven Central. In the meantime it can be found in the snapshots repository. Add the following to your root of your `pom.xml`:
 
@@ -37,25 +40,19 @@ And in your `<build>` section:
 <plugin>
     <groupId>ca.footeware</groupId>
     <artifactId>flatpak-maven-plugin</artifactId>
-    <version>1.1.0-SNAPSHOT</version>
+    <version>1.2.0-SNAPSHOT</version>
     <executions>
         <execution>
             <id>prepare</id>
             <phase>package</phase>
             <goals>
                 <goal>prepare-build</goal>
+                <goal>build-repo</goal>
+                <goal>export-flatpak</goal>
             </goals>
             <configuration>
                 <!-- required parameters, see below -->
             </configuration>
-        </execution>
-        <execution>
-            <id>build</id>
-            <phase>package</phase>
-            <goals>
-                <goal>build-repo</goal>
-            </goals>
-            <!-- default configuration -->
         </execution>
     </executions>
 </plugin>
@@ -140,7 +137,7 @@ A lot of the required parameters are taken from the stock pom properties. The re
             <plugin>
                 <groupId>ca.footeware</groupId>
                 <artifactId>flatpak-maven-plugin</artifactId>
-                <version>1.1.0-SNAPSHOT</version>
+                <version>1.2.0-SNAPSHOT</version>
                 <executions>
                     <!--build the artifacts needed for a flatpak build-->
                     <execution>
@@ -148,6 +145,8 @@ A lot of the required parameters are taken from the stock pom properties. The re
                         <phase>package</phase>
                         <goals>
                             <goal>prepare-build</goal>
+                            <goal>build-repo</goal>
+                            <goal>export-flatpak</goal>
                         </goals>
                         <configuration>
                             <mainClass>ca.footeware.javagi.journal.JournalApplication</mainClass>
@@ -243,15 +242,6 @@ A lot of the required parameters are taken from the stock pom properties. The re
                             </manifest>
                         </configuration>
                     </execution>
-                    <!--build the flatpak repository-->
-                    <execution>
-                        <id>build</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>build-repo</goal>
-                        </goals>
-                        <!--no configuration-->
-                    </execution>
                 </executions>
             </plugin>
         </plugins>
@@ -331,7 +321,6 @@ A lot of the required parameters are taken from the stock pom properties. The re
 
 ## TODO
 
-* Create a separate goal to call `flatpak` to export .flatpak file,
 * Site development.
 * Investigate and release the plugin to maven central.
 
