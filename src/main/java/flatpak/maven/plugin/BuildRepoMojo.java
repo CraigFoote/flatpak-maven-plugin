@@ -4,6 +4,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -37,20 +39,16 @@ public class BuildRepoMojo extends AbstractMojo {
 	@Override
 	public void execute() throws MojoExecutionException, MojoFailureException {
 		boolean isWindows = System.getProperty("os.name").toLowerCase().startsWith("windows");
-
-		ProcessBuilder builder = new ProcessBuilder();
 		if (isWindows) {
-			LOGGER.info("Determined OS to be Windows. Executing 'cmd.exe'.");
-			builder.command("cmd.exe", "/c", "flatpak-builder", "--repo=repo", "--force-clean", "build-dir",
-					project.getGroupId() + "." + project.getArtifactId() + ".yml");
-		} else {
-			LOGGER.info("Determined OS to be something other than Windows. Executing shell command.");
-			builder.command("flatpak-builder", "--repo=repo", "--force-clean", "build-dir",
-					project.getGroupId() + "." + project.getArtifactId() + ".yml");
+			throw new MojoExecutionException("Windows builds are not supported.");
 		}
 
-		String workingDir = project.getBasedir() + File.separator + "target" + File.separator + "app" + File.separator;
-		File workingFolder = new File(workingDir);
+		ProcessBuilder builder = new ProcessBuilder();
+		builder.command("flatpak-builder", "--repo=repo", "--force-clean", "build-dir",
+				project.getGroupId() + "." + project.getArtifactId() + ".yml");
+
+		Path workingPath = Paths.get(project.getBasedir().getAbsolutePath(), "target", "app");
+		File workingFolder = workingPath.toFile();
 		if (!workingFolder.exists()) {
 			throw new MojoExecutionException(
 					"The project's '/target/app/' folder was not found. Did you run the 'prepare-build' goal first?");
@@ -91,8 +89,8 @@ public class BuildRepoMojo extends AbstractMojo {
 		}
 
 		// confirm presence
-		String expectedRepoFolderLocation = workingDir + "repo";
-		File repoFolder = new File(expectedRepoFolderLocation);
+		Path expectedRepoFolderLocation = Paths.get(workingPath.toString(), "repo");
+		File repoFolder = expectedRepoFolderLocation.toFile();
 		if (!repoFolder.exists()) {
 			throw new MojoExecutionException(
 					"Error, expected built repository not found: " + expectedRepoFolderLocation);

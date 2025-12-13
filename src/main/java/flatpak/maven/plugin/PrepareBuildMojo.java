@@ -561,6 +561,11 @@ public class PrepareBuildMojo extends AbstractMojo {
 
 	@Override
 	public void execute() throws MojoExecutionException {
+		boolean isWindows = System.getProperty("os.name").toLowerCase().startsWith("windows");
+		if (isWindows) {
+			throw new MojoExecutionException("Windows builds are not supported.");
+		}
+
 		addManifestDefaults();
 		addSdkExtensionModule();
 

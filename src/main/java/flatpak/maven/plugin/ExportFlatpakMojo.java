@@ -4,6 +4,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -38,21 +40,17 @@ public class ExportFlatpakMojo extends AbstractMojo {
 	@Override
 	public void execute() throws MojoExecutionException, MojoFailureException {
 		boolean isWindows = System.getProperty("os.name").toLowerCase().startsWith("windows");
-
-		ProcessBuilder builder = new ProcessBuilder();
 		if (isWindows) {
-			LOGGER.info("Determined OS to be Windows. Executing 'cmd.exe'.");
-			builder.command("cmd.exe", "/c", "flatpak", "build-bundle", "repo", project.getGroupId() + "."
-					+ project.getArtifactId() + FLATPAK + project.getGroupId() + "." + project.getArtifactId());
-		} else {
-			LOGGER.info("Determined OS to be something other than Windows. Executing shell command.");
-			builder.command("flatpak", "build-bundle", "repo",
-					project.getGroupId() + "." + project.getArtifactId() + FLATPAK,
-					project.getGroupId() + "." + project.getArtifactId());
+			throw new MojoExecutionException("Windows builds are not supported.");
 		}
 
-		String workingDir = project.getBasedir() + File.separator + "target" + File.separator + "app";
-		File workingFolder = new File(workingDir);
+		ProcessBuilder builder = new ProcessBuilder();
+		builder.command("flatpak", "build-bundle", "repo",
+				project.getGroupId() + "." + project.getArtifactId() + FLATPAK,
+				project.getGroupId() + "." + project.getArtifactId());
+
+		Path workingPath = Paths.get(project.getBasedir().getAbsolutePath(), "target", "app");
+		File workingFolder = workingPath.toFile();
 		if (!workingFolder.exists()) {
 			throw new MojoExecutionException(
 					"The project's '/target/app/' folder was not found. Did you run the 'prepare-build' goal first?");
@@ -109,9 +107,9 @@ public class ExportFlatpakMojo extends AbstractMojo {
 		}
 
 		// confirm presence
-		String expectedFileLocation = workingDir + File.separator + project.getGroupId() + "." + project.getArtifactId()
-				+ FLATPAK;
-		File flatpak = new File(expectedFileLocation);
+		Path expectedFileLocation = Paths.get(workingPath.toString(),
+				project.getGroupId() + "." + project.getArtifactId() + FLATPAK);
+		File flatpak = expectedFileLocation.toFile();
 		if (!flatpak.exists()) {
 			throw new MojoExecutionException("Error, expected built file not found: " + expectedFileLocation);
 		}
