@@ -60,7 +60,7 @@ And in your `<build>` section:
 
 ### Configure The Plugin
 
-A lot of the required parameters are taken from the stock pom properties. The rest are provided explictly in the plugin's `configuration` block. For example the pom.xml of the Journal application mentioned above:
+A lot of the required parameters are taken from the stock pom properties. The rest are provided explicitly in the plugin's `configuration` block. For example the pom.xml of the Journal application mentioned above:
 
 ```xml
 <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -139,7 +139,6 @@ A lot of the required parameters are taken from the stock pom properties. The re
                 <artifactId>flatpak-maven-plugin</artifactId>
                 <version>1.2.0-SNAPSHOT</version>
                 <executions>
-                    <!--build the artifacts needed for a flatpak build-->
                     <execution>
                         <id>prepare</id>
                         <phase>package</phase>
