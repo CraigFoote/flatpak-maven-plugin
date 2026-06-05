@@ -46,7 +46,7 @@ public class ExportFlatpakMojo extends AbstractMojo {
 
 		ProcessBuilder builder = new ProcessBuilder();
 		builder.command("flatpak", "build-bundle", "repo",
-				project.getGroupId() + "." + project.getArtifactId() + FLATPAK,
+				project.getGroupId() + "." + project.getArtifactId() + project.getVersion() + FLATPAK,
 				project.getGroupId() + "." + project.getArtifactId());
 
 		Path workingPath = Paths.get(project.getBasedir().getAbsolutePath(), "target", "app");
