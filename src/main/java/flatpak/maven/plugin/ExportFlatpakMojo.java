@@ -46,7 +46,7 @@ public class ExportFlatpakMojo extends AbstractMojo {
 
 		ProcessBuilder builder = new ProcessBuilder();
 		builder.command("flatpak", "build-bundle", "repo",
-				project.getGroupId() + "." + project.getArtifactId() + project.getVersion() + FLATPAK,
+				project.getGroupId() + "." + project.getArtifactId() + "-" + project.getVersion() + FLATPAK,
 				project.getGroupId() + "." + project.getArtifactId());
 
 		Path workingPath = Paths.get(project.getBasedir().getAbsolutePath(), "target", "app");
@@ -108,7 +108,7 @@ public class ExportFlatpakMojo extends AbstractMojo {
 
 		// confirm presence
 		Path expectedFileLocation = Paths.get(workingPath.toString(),
-				project.getGroupId() + "." + project.getArtifactId() + FLATPAK);
+				project.getGroupId() + "." + project.getArtifactId() + "-" + project.getVersion() + FLATPAK);
 		File flatpak = expectedFileLocation.toFile();
 		if (!flatpak.exists()) {
 			throw new MojoExecutionException("Error, expected built file not found: " + expectedFileLocation);
